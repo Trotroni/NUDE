@@ -1,0 +1,10 @@
+# Fichiers d'environnement
+var.env
+.env
+
+# Logs
+logs/
+
+# Cache Python
+__pycache__/
+*.pyc
