@@ -10,7 +10,7 @@ LED_PIN = 3
 GPIO.setup(LED_PIN, GPIO.OUT)
 
 # ====== Load .env ======
-load_dotenv()
+load_dotenv("var.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", 0))  # Pour tester rapidement les commandes dans un serveur spécifique
 
