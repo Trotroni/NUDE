@@ -40,11 +40,31 @@ async def on_ready():
         await tree.sync()
         logger.info("Global commands synced")
 
+# ===== Help command =====
+@tree.command(
+    name="help",
+    description="Affiche un message d'aide",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def help(interaction: discord.Interaction, message: str):
+    await interaction.response.send_message(message)
+    print(f"Help command used by {interaction.user}")
+
 # ====== Slash command example ======
 @tree.command(name="ping", description="Répond avec Pong!", guild=discord.Object(id=GUILD_ID))
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong!")
     logger.info(f"Ping command used by {interaction.user}")
+
+# ===== Say command =====
+@tree.command(
+    name="say",
+    description="Fait répéter un message par le bot",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def say(interaction: discord.Interaction, message: str):
+    await interaction.response.send_message(message)
+    print(f"The bot say : {message}")
 
 # ====== Run Bot ======
 if TOKEN:
