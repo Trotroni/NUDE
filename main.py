@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands
+from discord import app_commands, Interaction
 import logging
 import os
 from dotenv import load_dotenv
