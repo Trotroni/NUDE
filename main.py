@@ -3,6 +3,11 @@ from discord import app_commands
 import logging
 import os
 from dotenv import load_dotenv
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+LED_PIN = 3
+GPIO.setup(LED_PIN, GPIO.OUT)
 
 # ====== Load .env ======
 load_dotenv()
@@ -56,15 +61,38 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong!")
     logger.info(f"Ping command used by {interaction.user}")
 
-# ===== Say command =====
-@tree.command(
-    name="say",
-    description="Fait répéter un message par le bot",
-    guild=discord.Object(id=GUILD_ID)
+# ===== Command /say =====
+@tree.command(name="say", description="Le bot répète ton message joliment", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(
+    message="Le texte que tu veux que le bot répète",
+    couleur="Optionnel : choisis une couleur (red, green, blue, yellow)"
 )
-async def say(interaction: discord.Interaction, message: str):
-    await interaction.response.send_message(message)
-    print(f"The bot say : {message}")
+async def say(interaction: Interaction, message: str, couleur: str = "blue"):
+    color_map = {
+        "red": Color.red(),
+        "green": Color.green(),
+        "blue": Color.blue(),
+        "yellow": Color.yellow()
+    }
+    color = color_map.get(couleur.lower(), Color.blue())
+
+    embed = Embed(title="💬 Message", description=message, color=color)
+    await interaction.response.send_message(embed=embed)
+
+# ===== Command /led =====
+
+@tree.command(name="led", description="Allume ou éteint la LED", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(state="on pour allumer, off pour éteindre")
+async def led(interaction: Interaction, state: str):
+    state = state.lower()
+    if state == "on":
+        GPIO.output(LED_PIN, GPIO.HIGH)
+        await interaction.response.send_message("💡 LED allumée !")
+    elif state == "off":
+        GPIO.output(LED_PIN, GPIO.LOW)
+        await interaction.response.send_message("🌑 LED éteinte !")
+    else:
+        await interaction.response.send_message("⚠️ Utilise `/led on` ou `/led off`")
 
 # ====== Run Bot ======
 if TOKEN:
