@@ -58,7 +58,7 @@ async def help(interaction: discord.Interaction, message: str):
 # ====== Slash command example ======
 @tree.command(name="ping", description="Répond avec Pong!", guild=discord.Object(id=GUILD_ID))
 async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message("Pong!")
+    await interaction.response.send_message("P-pong!")
     logger.info(f"Ping command used by {interaction.user}")
 
 # ===== Command /say =====
