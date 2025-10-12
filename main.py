@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import RPi.GPIO as GPIO
 
 GPIO.setmode(GPIO.BCM)
-LED_PIN = 3
+LED_PIN = 12
 GPIO.setup(LED_PIN, GPIO.OUT)
 
 # ====== Load .env ======
