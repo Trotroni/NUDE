@@ -8,7 +8,7 @@ import subprocess
 
 # ====== GPIO setup ======
 GPIO.setmode(GPIO.BCM)
-LED_PIN = 23
+LED_PIN = 233
 MOTOR_PIN = 13
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.setup(MOTOR_PIN, GPIO.OUT)
