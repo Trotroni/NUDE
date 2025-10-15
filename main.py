@@ -1,24 +1,28 @@
 import discord
-from discord import app_commands, Interaction, Color, Embed
+from discord import app_commands, Interaction, Embed
 import logging
 import os
-from dotenv import load_dotenv
+import random
 import RPi.GPIO as GPIO
+from dotenv import load_dotenv
+import asyncio
 import subprocess
 
-# ====== GPIO setup ======
+# === CONFIG GPIO ===
 GPIO.setmode(GPIO.BCM)
 LED_PIN = 23
 MOTOR_PIN = 13
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.setup(MOTOR_PIN, GPIO.OUT)
 
-# ====== Load .env ======
+# === CONFIG ENV ===
 load_dotenv("var.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", 0))
+TEXT_CHANNEL_ID = int(os.getenv("TEXT_CHANNEL_ID", 0))
+VOICE_CHANNEL_ID = int(os.getenv("VOICE_CHANNEL_ID", 0))
 
-# ====== Logging ======
+# === LOGGING ===
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -29,62 +33,69 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("discord_bot")
-logger.info("Bot starting...")
 
-# ====== Bot Setup ======
+# === DISCORD CLIENT ===
 intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(intents=intents)
 tree = app_commands.CommandTree(bot)
 
-# ====== Sync commands ======
+# === HELPERS ===
+def led_state() -> str:
+    return "ON" if GPIO.input(LED_PIN) else "OFF"
+
+def motor_state() -> str:
+    return "ON" if GPIO.input(MOTOR_PIN) else "OFF"
+
+async def update_status():
+    """Met à jour l'activité du bot selon l'état de la LED"""
+    await bot.change_presence(activity=discord.Game(name=f"LED: {led_state()}"))
+
+async def play_random_audio():
+    """Lit un fichier audio aléatoire dans le salon vocal"""
+    folder = "/home/trotroni/discord-bot/NUDE/audio"
+    if not os.path.isdir(folder):
+        logger.warning("Dossier audio introuvable.")
+        return
+
+    files = [f for f in os.listdir(folder) if f.endswith(('.mp3', '.wav', '.ogg'))]
+    if not files:
+        logger.warning("Aucun fichier audio trouvé.")
+        return
+
+    file_path = os.path.join(folder, random.choice(files))
+    vc = await bot.get_channel(VOICE_CHANNEL_ID).connect()
+    vc.play(discord.FFmpegPCMAudio(file_path))
+    while vc.is_playing():
+        await asyncio.sleep(1)
+    await vc.disconnect()
+
+# === EVENTS ===
 @bot.event
 async def on_ready():
-    logger.info(f"Logged in as {bot.user}")
+    logger.info(f"Connecté en tant que {bot.user}")
+    await update_status()
+
+    if TEXT_CHANNEL_ID:
+        channel = bot.get_channel(TEXT_CHANNEL_ID)
+        await channel.send("Le bot est en ligne et opérationnel.")
+
+    # Lance la lecture audio aléatoire
+    try:
+        await play_random_audio()
+    except Exception as e:
+        logger.error(f"Erreur audio : {e}")
+
+    # Sync des commandes
     if GUILD_ID:
         guild = discord.Object(id=GUILD_ID)
         await tree.sync(guild=guild)
-        logger.info(f"Commands synced to guild {GUILD_ID}")
     else:
         await tree.sync()
-        logger.info("Global commands synced")
 
-# ====== Help command ======
-@tree.command(
-    name="help",
-    description="Affiche un message d'aide",
-    guild=discord.Object(id=GUILD_ID)
-)
-async def help_cmd(interaction: Interaction, message: str):
-    await interaction.response.send_message(message)
-    logger.info(f"Help command used by {interaction.user}")
-
-# ====== Ping command ======
-@tree.command(name="ping", description="Répond avec Pong!", guild=discord.Object(id=GUILD_ID))
-async def ping(interaction: Interaction):
-    await interaction.response.send_message("Pong!")
-    logger.info(f"Ping command used by {interaction.user}")
-
-# ====== Say command ======
-@tree.command(name="say", description="Le bot répète ton message joliment", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(
-    message="Le texte que tu veux que le bot répète",
-    couleur="Optionnel : red, green, blue, yellow"
-)
-async def say(interaction: Interaction, message: str, couleur: str = "blue"):
-    color_map = {
-        "red": Color.red(),
-        "green": Color.green(),
-        "blue": Color.blue(),
-        "yellow": Color.yellow()
-    }
-    color = color_map.get(couleur.lower(), Color.blue())
-    embed = Embed(title="Message", description=message, color=color)
-    await interaction.response.send_message(embed=embed)
-
-# ====== LED command ======
-@tree.command(name="led", description="Allume ou éteint la LED", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(state="on pour allumer, off pour éteindre")
+# === COMMANDES ===
+@tree.command(name="led", description="Contrôle la LED (GPIO 23)")
+@app_commands.describe(state="on / off")
 async def led(interaction: Interaction, state: str):
     state = state.lower()
     if state == "on":
@@ -94,12 +105,12 @@ async def led(interaction: Interaction, state: str):
         GPIO.output(LED_PIN, GPIO.LOW)
         await interaction.response.send_message("LED éteinte.")
     else:
-        await interaction.response.send_message("Utilise `/led on` ou `/led off`")
+        await interaction.response.send_message("Utilise /led on ou /led off.")
+    await update_status()
 
-# ====== Motor command ======
-@tree.command(name="motor", description="Allume ou éteint le moteur", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(state="on pour allumer, off pour éteindre")
-async def motor(interaction: Interaction, state: str):
+@tree.command(name="moteur", description="Contrôle le moteur (GPIO 13)")
+@app_commands.describe(state="on / off")
+async def moteur(interaction: Interaction, state: str):
     state = state.lower()
     if state == "on":
         GPIO.output(MOTOR_PIN, GPIO.HIGH)
@@ -108,24 +119,21 @@ async def motor(interaction: Interaction, state: str):
         GPIO.output(MOTOR_PIN, GPIO.LOW)
         await interaction.response.send_message("Moteur désactivé.")
     else:
-        await interaction.response.send_message("Utilise `/motor on` ou `/motor off`")
+        await interaction.response.send_message("Utilise /moteur on ou /moteur off.")
 
-# ====== Etat command ======
-@tree.command(name="etat", description="Donne l'état actuel de la LED et du moteur", guild=discord.Object(id=GUILD_ID))
+@tree.command(name="etat", description="Affiche l'état du moteur et de la LED")
 async def etat(interaction: Interaction):
-    led_state = "allumée" if GPIO.input(LED_PIN) else "éteinte"
-    motor_state = "activé" if GPIO.input(MOTOR_PIN) else "désactivé"
-    await interaction.response.send_message(f"LED : {led_state}\nMoteur : {motor_state}")
+    led_s = led_state()
+    motor_s = motor_state()
+    await interaction.response.send_message(f"LED: {led_s}\nMoteur: {motor_s}")
 
-# ====== Reboot command ======
-@tree.command(name="reboot", description="Redémarre le Raspberry Pi", guild=discord.Object(id=GUILD_ID))
-async def reboot_cmd(interaction: Interaction):
-    await interaction.response.send_message("Redémarrage en cours...")
-    # Execute reboot in background so the bot can respond immediately
-    subprocess.Popen(["sudo", "reboot"])
+@tree.command(name="reboot", description="Redémarre le Raspberry Pi (admin uniquement)")
+async def reboot(interaction: Interaction):
+    await interaction.response.send_message("Redémarrage du Raspberry Pi en cours...")
+    os.system("sudo reboot")
 
-# ====== Run Bot ======
+# === RUN ===
 if TOKEN:
     bot.run(TOKEN)
 else:
-    logger.error("DISCORD_TOKEN not found in var.env")
+    logger.error("DISCORD_TOKEN manquant dans var.env")
