@@ -19,7 +19,7 @@ GPIO.setup(MOTOR_PIN, GPIO.OUT)
 load_dotenv("var.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", 0))
-CHANNEL_ID = int(os.getenv("CHANNEL_ID", 0))  # facultatif : pour envoyer un message ou audio au démarrage
+CHANNEL_ID = int(os.getenv("CHANNEL_ID", 0))
 
 # ==== Logging ====
 os.makedirs("logs", exist_ok=True)
