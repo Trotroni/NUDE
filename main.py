@@ -11,7 +11,10 @@ import subprocess
 # ==== Setup GPIO ====
 GPIO.setmode(GPIO.BCM)
 LED_PIN = 23
+<<<<<<< Updated upstream
 MOTOR_PIN = 13
+=======
+>>>>>>> Stashed changes
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.setup(MOTOR_PIN, GPIO.OUT)
 
