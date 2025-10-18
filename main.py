@@ -1,119 +1,84 @@
-import discord
-from discord import app_commands, Embed, Color, Interaction
-import logging
 import os
-from dotenv import load_dotenv
-import RPi.GPIO as GPIO
 import random
-import asyncio
-import subprocess
+import discord
+from discord.ext import commands
+from dotenv import load_dotenv
+import csv
 
-# ==== Setup GPIO ====
-GPIO.setmode(GPIO.BCM)
-LED_PIN = 23
-<<<<<<< Updated upstream
-MOTOR_PIN = 13
-=======
->>>>>>> Stashed changes
-GPIO.setup(LED_PIN, GPIO.OUT)
-GPIO.setup(MOTOR_PIN, GPIO.OUT)
-
-# ==== Load env ====
-load_dotenv("var.env")
+# Charger le token depuis .env
+load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-GUILD_ID = int(os.getenv("GUILD_ID", 0))
-CHANNEL_ID = int(os.getenv("CHANNEL_ID", 0))
 
-# ==== Logging ====
-os.makedirs("logs", exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    handlers=[
-        logging.FileHandler("logs/bot.log", encoding="utf-8"),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger("discord_bot")
-
-# ==== Bot setup ====
+# Préfixe pour les commandes slash
 intents = discord.Intents.default()
+intents.messages = True
 intents.message_content = True
-bot = discord.Client(intents=intents)
-tree = app_commands.CommandTree(bot)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ==== Synchronisation fiable des commandes ====
+# Chargement des commandes personnalisées depuis commands.csv
+custom_commands = {}
+commands_path = os.path.join(os.path.dirname(__file__), "commands.csv")
+if os.path.exists(commands_path):
+    with open(commands_path, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 2:
+                custom_commands[row[0].strip()] = row[1].strip()
+
+# Dossier audio
+audio_folder = os.path.join(os.path.dirname(__file__), "audio")
+if not os.path.exists(audio_folder):
+    print("⚠️ Dossier audio introuvable :", audio_folder)
+else:
+    print("🎵 Dossier audio détecté :", audio_folder)
+
 @bot.event
 async def on_ready():
-    logger.info(f"Connecté en tant que {bot.user}")
-    await bot.change_presence(activity=discord.Game(name="LED: {} | Moteur: {}".format(
-        "ON" if GPIO.input(LED_PIN) else "OFF",
-        "ON" if GPIO.input(MOTOR_PIN) else "OFF"
-    )))
-    
-    await asyncio.sleep(3)  # délai de sécurité avant sync
+    print(f"✅ Connecté en tant que {bot.user}")
 
+    # Synchronisation des commandes slash
     try:
-        if GUILD_ID:
-            guild = discord.Object(id=GUILD_ID)
-            await tree.sync(guild=guild)
-            logger.info(f"Commandes synchronisées pour le serveur {GUILD_ID}")
-        else:
-            await tree.sync()
-            logger.info("Commandes synchronisées globalement")
+        await bot.tree.sync()
+        print("🔄 Commandes slash synchronisées globalement")
     except Exception as e:
-        logger.error(f"Erreur de synchronisation : {e}")
+        print("⚠️ Erreur lors de la synchronisation des commandes :", e)
 
-    # Envoi d'un message dans un canal au démarrage
-    if CHANNEL_ID:
-        channel = bot.get_channel(CHANNEL_ID)
-        if channel:
-            await channel.send("✅ Bot en ligne sur Raspberry Pi !")
+# Commande /reload_commands pour recharger les commandes CSV sans redémarrer le bot
+@bot.tree.command(name="reload_commands", description="Recharge les commandes personnalisées depuis le fichier CSV")
+async def reload_commands(interaction: discord.Interaction):
+    global custom_commands
+    custom_commands.clear()
+    with open(commands_path, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 2:
+                custom_commands[row[0].strip()] = row[1].strip()
+    await interaction.response.send_message("🔄 Commandes personnalisées rechargées !")
 
-# ==== Commande LED ====
-@tree.command(name="led", description="Allume ou éteint la LED", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(state="on pour allumer, off pour éteindre")
-async def led(interaction: Interaction, state: str):
-    state = state.lower()
-    if state == "on":
-        GPIO.output(LED_PIN, GPIO.HIGH)
-        await interaction.response.send_message("LED allumée")
-    elif state == "off":
-        GPIO.output(LED_PIN, GPIO.LOW)
-        await interaction.response.send_message("LED éteinte")
-    else:
-        await interaction.response.send_message("Utilise `/led on` ou `/led off`")
-    await bot.change_presence(activity=discord.Game(name=f"LED: {'ON' if GPIO.input(LED_PIN) else 'OFF'}"))
+# Gestion des messages
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
 
-# ==== Commande MOTEUR ====
-@tree.command(name="moteur", description="Active ou désactive le moteur", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(state="on pour activer, off pour désactiver")
-async def moteur(interaction: Interaction, state: str):
-    state = state.lower()
-    if state == "on":
-        GPIO.output(MOTOR_PIN, GPIO.HIGH)
-        await interaction.response.send_message("Moteur activé")
-    elif state == "off":
-        GPIO.output(MOTOR_PIN, GPIO.LOW)
-        await interaction.response.send_message("Moteur désactivé")
-    else:
-        await interaction.response.send_message("Utilise `/moteur on` ou `/moteur off`")
+    # 1️⃣ Commandes personnalisées
+    if message.content.startswith("/"):
+        cmd = message.content[1:].strip()
+        if cmd in custom_commands:
+            await message.channel.send(custom_commands[cmd])
+            return
 
-# ==== Commande ÉTAT ====
-@tree.command(name="etat", description="Affiche l'état du moteur et de la LED", guild=discord.Object(id=GUILD_ID))
-async def etat(interaction: Interaction):
-    led_state = "ON" if GPIO.input(LED_PIN) else "OFF"
-    motor_state = "ON" if GPIO.input(MOTOR_PIN) else "OFF"
-    await interaction.response.send_message(f"LED : {led_state}\nMoteur : {motor_state}")
+    # 2️⃣ Si message contient une image ou un lien → envoi d’un audio aléatoire dans #meme
+    if message.attachments or "http" in message.content:
+        guild = message.guild
+        meme_channel = discord.utils.get(guild.text_channels, name="meme")
+        if meme_channel and os.path.exists(audio_folder):
+            audio_files = [f for f in os.listdir(audio_folder) if f.lower().endswith((".mp3", ".wav", ".ogg"))]
+            if audio_files:
+                chosen = random.choice(audio_files)
+                await meme_channel.send(file=discord.File(os.path.join(audio_folder, chosen)))
+                print(f"📤 Fichier audio envoyé : {chosen}")
 
-# ==== Commande REBOOT ====
-@tree.command(name="reboot", description="Redémarre le Raspberry Pi", guild=discord.Object(id=GUILD_ID))
-async def reboot(interaction: Interaction):
-    await interaction.response.send_message("Redémarrage du Raspberry Pi...")
-    os.system("sudo reboot")
+    await bot.process_commands(message)
 
-# ==== Lancement ====
-if TOKEN:
-    bot.run(TOKEN)
-else:
-    logger.error("DISCORD_TOKEN manquant dans var.env")
+bot.run(TOKEN)
