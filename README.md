@@ -198,18 +198,18 @@ Redémarrez le bot, puis :
 
 Voici des codes de langue ISO 639-1 courants :
 
-| Code | Langue        | Fichier      |
-|------|---------------|--------------|
-| `fr` | Français      | `fr.json`    |
-| `en` | Anglais       | `en.json`    |
-| `es` | Espagnol      | `es.json`    |
-| `de` | Allemand      | `de.json`    |
-| `it` | Italien       | `it.json`    |
-| `pt` | Portugais     | `pt.json`    |
-| `ja` | Japonais      | `ja.json`    |
-| `zh` | Chinois       | `zh.json`    |
-| `ru` | Russe         | `ru.json`    |
-| `ar` | Arabe         | `ar.json`    |
+| Code | Langue        | Fichier      | Disponibilité |
+|------|---------------|--------------|---------------|
+| `fr` | Français      | `fr.json`    |      Oui      |
+| `en` | Anglais       | `en.json`    |      Non      |
+| `es` | Espagnol      | `es.json`    |      Non      |
+| `de` | Allemand      | `de.json`    |      Non      |
+| `it` | Italien       | `it.json`    |      Non      |
+| `pt` | Portugais     | `pt.json`    |      Non      |
+| `ja` | Japonais      | `ja.json`    |      Non      |
+| `zh` | Chinois       | `zh.json`    |      Non      |
+| `ru` | Russe         | `ru.json`    |      Non      |
+| `ar` | Arabe         | `ar.json`    |      Non      |
 
 ---
 
