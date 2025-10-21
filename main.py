@@ -13,7 +13,7 @@ import os
 import csv
 import json
 import logging
-import datetime
+from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 import asyncio
@@ -261,16 +261,16 @@ async def on_ready():
     # Envoyer notification de démarrage
     import datetime
 
-if CHANNEL_ID_BOT:
-    try:
-        channel = bot.get_channel(int(CHANNEL_ID_BOT))
-        if channel:
-            now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            message = lang_manager.get("bot_online").format(datetime=now)
-            await channel.send(message)
-            logger.info(f"✅ Notification envoyée au salon {CHANNEL_ID_BOT} à {now}")
-    except Exception as e:
-        logger.error(f"❌ Erreur lors de l'envoi de la notification : {e}")
+    if CHANNEL_ID_BOT:
+        try:
+            channel = bot.get_channel(int(CHANNEL_ID_BOT))
+            if channel:
+                now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                message = lang_manager.get("bot_online").format(datetime=now)
+                await channel.send(message)
+                logger.info(f"✅ Notification envoyée au salon {CHANNEL_ID_BOT} à {now}")
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de l'envoi de la notification : {e}")
 
 
 
