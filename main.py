@@ -13,7 +13,7 @@ import os
 import csv
 import json
 import logging
-from datetime import datetime
+import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 import asyncio
@@ -638,7 +638,7 @@ async def reboot(interaction: discord.Interaction):
     logger.warning(f"Reboot du serveur initié par {interaction.user}")
     
     try:
-        await bot.close()
+        bot.close()
         subprocess.run(['sudo', 'reboot', 'now'], check=True)
     except Exception as e:
         logger.error(f"Erreur lors du reboot : {e}")
