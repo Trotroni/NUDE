@@ -263,7 +263,7 @@ async def on_ready():
         try:
             channel = bot.get_channel(int(CHANNEL_ID_BOT))
             if channel:
-                now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 message = lang_manager.get("bot_online").format(datetime=now)
                 await channel.send(message)
                 logger.info(f"✅ Notification envoyée au salon {CHANNEL_ID_BOT} à {now}")
