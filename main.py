@@ -259,8 +259,6 @@ async def on_ready():
         logger.error(f"❌ Erreur lors de la synchronisation des commandes : {e}")
     
     # Envoyer notification de démarrage
-    import datetime
-
     if CHANNEL_ID_BOT:
         try:
             channel = bot.get_channel(int(CHANNEL_ID_BOT))
