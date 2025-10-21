@@ -198,7 +198,7 @@ Redémarrez le bot, puis :
 
 Voici des codes de langue ISO 639-1 courants :
 
-| Code | Langue        | Fichier      | Disponibilité |
+| Code | Langue        | Fichier      | Disponible |
 |------|---------------|--------------|---------------|
 | `fr` | Français      | `fr.json`    |      Oui      |
 | `en` | Anglais       | `en.json`    |      Non      |
