@@ -13,7 +13,7 @@ import os
 import csv
 import json
 import logging
-from datetime import datetime
+import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 import asyncio
