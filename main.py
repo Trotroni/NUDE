@@ -259,14 +259,19 @@ async def on_ready():
         logger.error(f"❌ Erreur lors de la synchronisation des commandes : {e}")
     
     # Envoyer notification de démarrage
-    if CHANNEL_ID_BOT:
-        try:
-            channel = bot.get_channel(int(CHANNEL_ID_BOT))
-            if channel:
-                await channel.send(lang_manager.get("bot_online"))
-                logger.info(f"✅ Notification envoyée au salon {CHANNEL_ID_BOT}")
-        except Exception as e:
-            logger.error(f"❌ Erreur lors de l'envoi de la notification : {e}")
+    import datetime
+
+if CHANNEL_ID_BOT:
+    try:
+        channel = bot.get_channel(int(CHANNEL_ID_BOT))
+        if channel:
+            now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            message = lang_manager.get("bot_online").format(datetime=now)
+            await channel.send(message)
+            logger.info(f"✅ Notification envoyée au salon {CHANNEL_ID_BOT} à {now}")
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de l'envoi de la notification : {e}")
+
 
 
 @bot.event
@@ -635,6 +640,7 @@ async def reboot(interaction: discord.Interaction):
     logger.warning(f"Reboot du serveur initié par {interaction.user}")
     
     try:
+        await bot.close()
         subprocess.run(['sudo', 'reboot', 'now'], check=True)
     except Exception as e:
         logger.error(f"Erreur lors du reboot : {e}")
