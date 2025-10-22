@@ -536,3 +536,5 @@ async def systemlog_command(interaction: discord.Interaction, error: bool = Fals
         await interaction.followup.send(embed=embed, ephemeral=True)
     except Exception as e:
         await interaction.followup.send(f"❌ Erreur lecture logs système: {e}", ephemeral=True)
+
+bot.run(DISCORD_TOKEN)
