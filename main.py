@@ -33,14 +33,17 @@ from dotenv import load_dotenv
 # CONFIGURATION ET INITIALISATION
 # ========================================
 
-# Charger les variables d'environnement
-load_dotenv()
+# Charger d'abord les variables générales
+load_dotenv(dotenv_path="var.env")
 
-DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD_ID = os.getenv('GUILD_ID')
-CHANNEL_ID_BOT = os.getenv('CHANNEL_ID_BOT')
-ADMIN_ROLE_ID = os.getenv('ADMIN_ROLE_ID')
-DEFAULT_LANGUAGE = os.getenv('DEFAULT_LANGUAGE', 'fr')
+# Puis charger le token (écrase seulement si déjà défini dans var.env)
+load_dotenv(dotenv_path="token.env", override=True)
+
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = os.getenv("GUILD_ID")
+CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
+ADMIN_ROLE_ID = os.getenv("ADMIN_ROLE_ID")
+DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "fr")
 
 # Vérification du token
 if not DISCORD_TOKEN:
