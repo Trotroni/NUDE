@@ -441,3 +441,39 @@ async def warns_check(interaction: discord.Interaction, user: discord.Member):
     data = warns_data.get(uid)
     if not data:
         await interaction.response.send
+
+@bot.tree.command(name="unwarn", description="Supprime un warn d'un utilisateur")
+@app_commands.describe(user="Utilisateur", number="Numéro du warn à supprimer (optionnel)")
+async def unwarn_command(interaction: discord.Interaction, user: discord.Member, number: int = None):
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        return
+
+    uid = user.id
+    data = warns_data.get(uid)
+    if not data or data["count"] == 0:
+        await interaction.response.send_message(f"{user.mention} n'a aucun warn.", ephemeral=True)
+        return
+
+    if number is None:
+        # Supprimer le dernier warn
+        removed_reason = data["reasons"].pop()
+        data["count"] -= 1
+        action = f"Le dernier warn a été supprimé : {removed_reason}"
+    else:
+        # Supprimer le warn spécifique si valide
+        if number < 1 or number > data["count"]:
+            await interaction.response.send_message(f"Numéro de warn invalide. Total: {data['count']}", ephemeral=True)
+            return
+        removed_reason = data["reasons"].pop(number - 1)
+        data["count"] -= 1
+        action = f"Le warn #{number} a été supprimé : {removed_reason}"
+
+    # Si plus aucun warn, supprimer l'entrée
+    if data["count"] == 0:
+        warns_data.pop(uid)
+    else:
+        warns_data[uid] = data
+
+    save_warns(warns_data)
+    await interaction.response.send_message(f"{user.mention} - {action}", ephemeral=True)
