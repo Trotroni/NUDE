@@ -537,5 +537,48 @@ async def systemlog_command(interaction: discord.Interaction, error: bool = Fals
     except Exception as e:
         await interaction.followup.send(f"❌ Erreur lecture logs système: {e}", ephemeral=True)
 
+# ========================================
+# COMMANDES SYSTÈME
+# ========================================
+
+@bot.tree.command(name="reboot", description="Redémarre le bot")
+async def reboot_command(interaction: discord.Interaction):
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        return
+
+    await interaction.response.send_message("🔄 Redémarrage du bot...", ephemeral=True)
+    logger.info("🔄 Redémarrage demandé par %s", interaction.user)
+    
+    # Déconnexion propre
+    await bot.close()
+    
+    # Relancer le script
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
+@bot.tree.command(name="upgrade", description="Met à jour le bot depuis Git")
+async def upgrade_command(interaction: discord.Interaction):
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        return
+
+    await interaction.response.send_message("⬆️ Mise à jour du bot en cours...", ephemeral=True)
+    logger.info("⬆️ Mise à jour demandée par %s", interaction.user)
+
+    try:
+        # Tirer les dernières modifications depuis Git
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+        output = result.stdout + "\n" + result.stderr
+        logger.info("Git pull output:\n%s", output)
+
+        # Redémarrer le bot après la mise à jour
+        await bot.close()
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la mise à jour: {e}")
+        await interaction.followup.send(f"❌ Erreur mise à jour: {e}", ephemeral=True)
+
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
