@@ -493,3 +493,46 @@ async def unwarn_command(interaction: discord.Interaction, user: discord.Member,
 
     save_warns(warns_data)
     await interaction.response.send_message(f"{user.mention} - {action}", ephemeral=True)
+
+# /logs - Affiche le dernier fichier de log du bot
+@bot.tree.command(name="logs", description="Affiche les derniers logs du bot")
+async def logs_command(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        log_files = sorted(LOGS_DIR.glob("bot_*.log"), reverse=True)
+        if not log_files:
+            await interaction.followup.send("❌ Aucun fichier de log trouvé.", ephemeral=True)
+            return
+
+        latest_file = log_files[0]
+        content = latest_file.read_text(encoding="utf-8")[-1900:]  # tronque si trop long
+        embed = discord.Embed(
+            title=f"📜 Logs Bot ({latest_file.name})",
+            description=f"```{content}```",
+            color=discord.Color.green()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Erreur lecture logs: {e}", ephemeral=True)
+
+
+# /systemlog - Affiche les logs système à partir de fichiers séparés
+@bot.tree.command(name="systemlog", description="Affiche les logs système (systemd)")
+@app_commands.describe(error="Afficher les erreurs au lieu de la sortie standard")
+async def systemlog_command(interaction: discord.Interaction, error: bool = False):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        filename = LOGS_DIR / ("systemd_error.log" if error else "systemd_output.log")
+        if not filename.exists():
+            await interaction.followup.send(f"❌ Fichier {filename.name} introuvable.", ephemeral=True)
+            return
+
+        content = filename.read_text(encoding="utf-8")[-1900:]  # tronque si trop long
+        embed = discord.Embed(
+            title=f"🖥️ Logs Système ({'Erreur' if error else 'Output'})",
+            description=f"```{content}```",
+            color=discord.Color.blue()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Erreur lecture logs système: {e}", ephemeral=True)
