@@ -308,26 +308,27 @@ async def help_command(interaction: discord.Interaction):
     )
     embed.add_field(name=t("help_csv", interaction), value=csv_commands, inline=False)
 
-    # Commandes de modération
+    # Commandes modération
     mod_commands = (
-        f"🟠 `/warn` - {t('help_warn', interaction)}\n"
-        f"🟠 `/warns` - {t('help_warns', interaction)}"
+        f"🟠 `/warn` - Met un warn à un utilisateur\n"
+        f"🟠 `/warns` - Voir les warns d'un utilisateur"
     )
-    embed.add_field(name=t("help_moderation", interaction), value=mod_commands, inline=False)
+    embed.add_field(name="⚠️ Modération", value=mod_commands, inline=False)
 
     # Commandes logs
     log_commands = (
-        f"🔵 `/logs` - {t('help_logs', interaction)}\n"
-        f"🔵 `/systemlog` - {t('help_systemlog', interaction)}"
+        f"🔵 `/logs` - Affiche les derniers logs du bot\n"
+        f"🔵 `/systemlog` - Affiche les logs système (systemd)"
     )
-    embed.add_field(name=t("help_logs_section", interaction), value=log_commands, inline=False)
+    embed.add_field(name="📜 Logs", value=log_commands, inline=False)
 
     # Commandes de langue
     embed.add_field(name=t("help_lang", interaction), value=f"🟢 `/language` - {t('help_language', interaction)}", inline=False)
 
+    # Footer
     embed.set_footer(text=t("help_footer", interaction))
-    await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # ========================================
 # COMMANDES MODÉRATION / LOGS
