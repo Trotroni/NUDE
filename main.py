@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Bot Discord avec commandes personnalisées CSV, support multilingue et modération
+Bot Discord complet avec commandes CSV, multilingue, modération et logs
 Nécessite: discord.py 2.x, python-dotenv
 Installation: pip install discord.py python-dotenv
 """
@@ -10,7 +10,6 @@ Installation: pip install discord.py python-dotenv
 # IMPORTS
 # ========================================
 
-# Librairies standard
 import os
 import sys
 import csv
@@ -18,12 +17,11 @@ import json
 import logging
 import asyncio
 import subprocess
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from collections import defaultdict
-import time
 
-# Librairies externes
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -33,10 +31,8 @@ from dotenv import load_dotenv
 # CONFIGURATION ET INITIALISATION
 # ========================================
 
-# Charger d'abord les variables générales
+# Charger les variables d'environnement
 load_dotenv(dotenv_path="var.env")
-
-# Puis charger le token (écrase seulement si déjà défini dans var.env)
 load_dotenv(dotenv_path="token.env", override=True)
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -45,9 +41,8 @@ CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
 ADMIN_ROLE_ID = os.getenv("ADMIN_ROLE_ID")
 DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "fr")
 
-# Vérification du token
 if not DISCORD_TOKEN:
-    raise ValueError("❌ DISCORD_TOKEN manquant dans le fichier .env")
+    raise ValueError("❌ DISCORD_TOKEN manquant dans les fichiers .env")
 
 # Chemins des fichiers
 BASE_DIR = Path(__file__).parent
@@ -56,9 +51,10 @@ LOGS_DIR = BASE_DIR / "logs"
 LANG_DIR = BASE_DIR / "languages"
 WARN_FILE = BASE_DIR / "warns.csv"
 
-# Créer les dossiers si nécessaire
+# Créer les dossiers/fichiers si nécessaires
 LOGS_DIR.mkdir(exist_ok=True)
 LANG_DIR.mkdir(exist_ok=True)
+COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
 # ========================================
@@ -74,28 +70,26 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger('DiscordBot')
+logger = logging.getLogger("DiscordBot")
 
 # ========================================
 # GESTION DES LANGUES
 # ========================================
 
 class LanguageManager:
-    """Gestionnaire de traductions multilingues."""
+    """Gestionnaire de traductions multilingues"""
     def __init__(self):
         self.translations = {}
         self.available_languages = []
-        self.user_preferences = {}  # user_id: language_code
+        self.user_preferences = {}
 
     def load_languages(self):
         self.translations.clear()
         self.available_languages.clear()
-
         files = list(LANG_DIR.glob("*.json"))
         if not files:
             logger.error(f"❌ Aucun fichier de langue dans {LANG_DIR}")
             raise FileNotFoundError("Aucun fichier de traduction")
-
         for file in files:
             lang_code = file.stem
             try:
@@ -104,8 +98,7 @@ class LanguageManager:
                     self.available_languages.append(lang_code)
                 logger.info(f"✅ Langue chargée : {lang_code}")
             except Exception as e:
-                logger.error(f"❌ Erreur chargement {file} : {e}")
-
+                logger.error(f"❌ Erreur chargement {file}: {e}")
         if not self.available_languages:
             raise ValueError("Aucune langue valide chargée")
 
@@ -196,7 +189,7 @@ def save_custom_commands():
         return False
 
 # ========================================
-# ANTI-SPAM POUR COMMANDES
+# ANTI-SPAM COMMANDES
 # ========================================
 
 command_cooldowns = defaultdict(lambda: 0)
@@ -211,7 +204,7 @@ async def check_command_cooldown(user_id: int, channel) -> bool:
     return True
 
 # ========================================
-# MODÉRATION - WARN / KICK TEMPORAIRE
+# MODÉRATION
 # ========================================
 
 WARN_LIMIT = 2
@@ -284,12 +277,8 @@ async def ping(interaction: discord.Interaction):
 
 @bot.tree.command(name="help", description="Affiche toutes les commandes disponibles")
 async def help_command(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title=t("help_title", interaction),
-        color=discord.Color.blue()
-    )
-
-    # Commandes système
+    embed = discord.Embed(title=t("help_title", interaction), color=discord.Color.blue())
+    
     system_commands = (
         f"🟢 `/ping` - {t('help_ping', interaction)}\n"
         f"🟡 `/reboot` - {t('help_reboot', interaction)}\n"
@@ -297,8 +286,7 @@ async def help_command(interaction: discord.Interaction):
         f"🟡 `/bot_update` - {t('help_bot_update', interaction)}"
     )
     embed.add_field(name=t("help_system", interaction), value=system_commands, inline=False)
-
-    # Commandes CSV personnalisées
+    
     csv_commands = (
         f"🟢 `/create` - {t('help_create', interaction)}\n"
         f"🟢 `/modif` - {t('help_modif', interaction)}\n"
@@ -308,33 +296,125 @@ async def help_command(interaction: discord.Interaction):
     )
     embed.add_field(name=t("help_csv", interaction), value=csv_commands, inline=False)
 
-    # Commandes modération
     mod_commands = (
         f"🟠 `/warn` - Met un warn à un utilisateur\n"
         f"🟠 `/warns` - Voir les warns d'un utilisateur"
     )
     embed.add_field(name="⚠️ Modération", value=mod_commands, inline=False)
 
-    # Commandes logs
     log_commands = (
         f"🔵 `/logs` - Affiche les derniers logs du bot\n"
         f"🔵 `/systemlog` - Affiche les logs système (systemd)"
     )
     embed.add_field(name="📜 Logs", value=log_commands, inline=False)
 
-    # Commandes de langue
     embed.add_field(name=t("help_lang", interaction), value=f"🟢 `/language` - {t('help_language', interaction)}", inline=False)
-
-    # Footer
     embed.set_footer(text=t("help_footer", interaction))
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # ========================================
-# COMMANDES MODÉRATION / LOGS
+# COMMANDES LANGUE
 # ========================================
 
-# WARN / KICK TEMPORAIRE
+@bot.tree.command(name="language", description="Change la langue du bot")
+@app_commands.describe(lang="Code de la langue (ex: fr, en)")
+async def language_command(interaction: discord.Interaction, lang: str = None):
+    if lang is None:
+        embed = discord.Embed(title=t("language_title", interaction), color=discord.Color.blue())
+        current_lang = lang_manager.user_preferences.get(interaction.user.id, DEFAULT_LANGUAGE)
+        current_name = lang_manager.get_language_name(current_lang)
+        embed.description = t("language_current", interaction, language=current_name) + "\n\n"
+        embed.description += t("language_available", interaction) + "\n"
+        for lang_code in sorted(lang_manager.available_languages):
+            embed.description += f"• `{lang_code}` - {lang_manager.get_language_name(lang_code)}\n"
+        embed.set_footer(text=t("language_usage", interaction))
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    else:
+        lang = lang.lower().strip()
+        if lang_manager.set_user_language(interaction.user.id, lang):
+            await interaction.response.send_message(t("language_changed", interaction, language=lang_manager.get_language_name(lang)), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("language_invalid", interaction, lang=lang), ephemeral=True)
+
+# ========================================
+# COMMANDES CSV GESTION
+# ========================================
+
+@bot.tree.command(name="list", description="Liste toutes les commandes personnalisées")
+async def list_commands(interaction: discord.Interaction):
+    if not custom_commands:
+        await interaction.response.send_message(t("list_empty", interaction), ephemeral=True)
+        return
+    embed = discord.Embed(title=t("list_title", interaction), color=discord.Color.green())
+    embed.description = "\n".join([f"• `/{name}`" for name in sorted(custom_commands.keys())])
+    embed.set_footer(text=t("list_footer", interaction, count=len(custom_commands)))
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="create", description="Crée une nouvelle commande personnalisée")
+@app_commands.describe(name="Nom de la commande", response="Réponse du bot")
+async def create_command(interaction: discord.Interaction, name: str, response: str):
+    name_lower = name.lower().strip()
+    if name_lower in custom_commands:
+        await interaction.response.send_message(t("create_exists", interaction, name=name_lower), ephemeral=True)
+        return
+    custom_commands[name_lower] = response.strip()
+    if save_custom_commands():
+        await interaction.response.send_message(t("create_success", interaction, name=name_lower), ephemeral=True)
+    else:
+        await interaction.response.send_message(t("create_error", interaction), ephemeral=True)
+
+@bot.tree.command(name="modif", description="Modifie une commande personnalisée existante")
+@app_commands.describe(old_name="Ancien nom", new_response="Nouvelle réponse", new_name="Nouveau nom (optionnel)")
+async def modify_command(interaction: discord.Interaction, old_name: str, new_response: str, new_name: str = None):
+    old_name_lower = old_name.lower().strip()
+    if old_name_lower not in custom_commands:
+        await interaction.response.send_message(t("modif_not_found", interaction, name=old_name_lower), ephemeral=True)
+        return
+    if new_name:
+        new_name_lower = new_name.lower().strip()
+        if new_name_lower != old_name_lower and new_name_lower in custom_commands:
+            await interaction.response.send_message(t("modif_name_exists", interaction, name=new_name_lower), ephemeral=True)
+            return
+        del custom_commands[old_name_lower]
+        custom_commands[new_name_lower] = new_response.strip()
+        if save_custom_commands():
+            await interaction.response.send_message(t("modif_success_rename", interaction, old_name=old_name_lower, new_name=new_name_lower), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("modif_error", interaction), ephemeral=True)
+    else:
+        custom_commands[old_name_lower] = new_response.strip()
+        if save_custom_commands():
+            await interaction.response.send_message(t("modif_success", interaction, name=old_name_lower), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("modif_error", interaction), ephemeral=True)
+
+@bot.tree.command(name="delete", description="Supprime une commande personnalisée")
+@app_commands.describe(name="Nom de la commande à supprimer")
+async def delete_command(interaction: discord.Interaction, name: str):
+    name_lower = name.lower().strip()
+    if name_lower not in custom_commands:
+        await interaction.response.send_message(t("delete_not_found", interaction, name=name_lower), ephemeral=True)
+        return
+    del custom_commands[name_lower]
+    if save_custom_commands():
+        await interaction.response.send_message(t("delete_success", interaction, name=name_lower), ephemeral=True)
+    else:
+        await interaction.response.send_message(t("delete_error", interaction), ephemeral=True)
+
+@bot.tree.command(name="reload_commands", description="Recharge les commandes depuis le CSV")
+async def reload_commands(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        load_custom_commands()
+        await interaction.followup.send(t("reload_success", interaction, count=len(custom_commands)), ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(t("reload_error", interaction, error=str(e)), ephemeral=True)
+
+# ========================================
+# COMMANDES MODÉRATION
+# ========================================
+
 @bot.tree.command(name="warn", description="Met un warn à un utilisateur")
 @app_commands.describe(user="Utilisateur", reason="Raison")
 async def warn_command(interaction: discord.Interaction, user: discord.Member, reason: str):
@@ -342,7 +422,7 @@ async def warn_command(interaction: discord.Interaction, user: discord.Member, r
         await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
         return
     uid = user.id
-    warns_data.setdefault(uid, {"count":0,"reasons":[]})
+    warns_data.setdefault(uid, {"count": 0, "reasons": []})
     warns_data[uid]["count"] += 1
     warns_data[uid]["reasons"].append(reason)
     save_warns(warns_data)
@@ -360,51 +440,4 @@ async def warns_check(interaction: discord.Interaction, user: discord.Member):
     uid = user.id
     data = warns_data.get(uid)
     if not data:
-        await interaction.response.send_message(f"{user.mention} aucun warn.", ephemeral=True)
-        return
-    reasons = "\n".join([f"{i+1}. {r}" for i,r in enumerate(data["reasons"])])
-    await interaction.response.send_message(f"{user.mention} - {data['count']} warns :\n{reasons}", ephemeral=True)
-
-# LOGS
-@bot.tree.command(name="logs", description="Afficher derniers logs du bot")
-@app_commands.describe(lines="Nombre de lignes")
-async def logs_command(interaction: discord.Interaction, lines: int = 10):
-    log_files = sorted(BASE_DIR.joinpath("logs").glob("bot_*.log"), reverse=True)
-    if not log_files:
-        await interaction.response.send_message("Aucun log", ephemeral=True)
-        return
-    last_log = log_files[0]
-    with open(last_log,"r",encoding="utf-8") as f:
-        content = f.readlines()[-lines:]
-    embed = discord.Embed(title=f"Logs {last_log.name}", description="```\n" + "".join(content) + "\n```", color=discord.Color.green())
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-@bot.tree.command(name="systemlog", description="Afficher logs systemd")
-@app_commands.describe(type="error/output", lines="Nombre de lignes")
-async def systemlog_command(interaction: discord.Interaction, type: str, lines: int = 10):
-    type = type.lower()
-    if type not in ["error","output"]:
-        await interaction.response.send_message("Type invalide", ephemeral=True)
-        return
-    log_file = BASE_DIR / f"logs/systemd_{type}.log"
-    if not log_file.exists():
-        await interaction.response.send_message(f"{log_file.name} introuvable", ephemeral=True)
-        return
-    with open(log_file,"r",encoding="utf-8") as f:
-        content = f.readlines()[-lines:]
-    embed = discord.Embed(title=f"Systemd {type} log", description="```\n" + "".join(content) + "\n```", color=discord.Color.orange() if type=="error" else discord.Color.blue())
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-# ========================================
-# LANCEMENT DU BOT
-# ========================================
-
-if __name__ == "__main__":
-    try:
-        logger.info("🚀 Démarrage du bot...")
-        bot.run(DISCORD_TOKEN)
-    except KeyboardInterrupt:
-        logger.info("Arrêt manuel")
-    except Exception as e:
-        logger.critical(f"Erreur critique: {e}", exc_info=True)
-        sys.exit(1)
+        await interaction.response.send
