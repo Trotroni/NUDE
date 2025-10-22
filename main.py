@@ -282,14 +282,52 @@ async def on_message(message):
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(t("ping_response", interaction), ephemeral=True)
 
-@bot.tree.command(name="help", description="Affiche les commandes")
+@bot.tree.command(name="help", description="Affiche toutes les commandes disponibles")
 async def help_command(interaction: discord.Interaction):
-    embed = discord.Embed(title=t("help_title", interaction), color=discord.Color.blue())
-    system_commands = f"🟢 `/ping`\n🟡 `/reboot`\n🟡 `/upgrade`\n🟡 `/bot_update`"
+    embed = discord.Embed(
+        title=t("help_title", interaction),
+        color=discord.Color.blue()
+    )
+
+    # Commandes système
+    system_commands = (
+        f"🟢 `/ping` - {t('help_ping', interaction)}\n"
+        f"🟡 `/reboot` - {t('help_reboot', interaction)}\n"
+        f"🟡 `/upgrade` - {t('help_upgrade', interaction)}\n"
+        f"🟡 `/bot_update` - {t('help_bot_update', interaction)}"
+    )
     embed.add_field(name=t("help_system", interaction), value=system_commands, inline=False)
-    csv_commands = "\n".join([f"• /{c}" for c in sorted(custom_commands.keys())])
-    embed.add_field(name=t("help_csv", interaction), value=csv_commands or "Aucune", inline=False)
+
+    # Commandes CSV personnalisées
+    csv_commands = (
+        f"🟢 `/create` - {t('help_create', interaction)}\n"
+        f"🟢 `/modif` - {t('help_modif', interaction)}\n"
+        f"🟢 `/delete` - {t('help_delete', interaction)}\n"
+        f"🟢 `/list` - {t('help_list', interaction)}\n"
+        f"🟢 `/reload_commands` - {t('help_reload', interaction)}"
+    )
+    embed.add_field(name=t("help_csv", interaction), value=csv_commands, inline=False)
+
+    # Commandes de modération
+    mod_commands = (
+        f"🟠 `/warn` - {t('help_warn', interaction)}\n"
+        f"🟠 `/warns` - {t('help_warns', interaction)}"
+    )
+    embed.add_field(name=t("help_moderation", interaction), value=mod_commands, inline=False)
+
+    # Commandes logs
+    log_commands = (
+        f"🔵 `/logs` - {t('help_logs', interaction)}\n"
+        f"🔵 `/systemlog` - {t('help_systemlog', interaction)}"
+    )
+    embed.add_field(name=t("help_logs_section", interaction), value=log_commands, inline=False)
+
+    # Commandes de langue
+    embed.add_field(name=t("help_lang", interaction), value=f"🟢 `/language` - {t('help_language', interaction)}", inline=False)
+
+    embed.set_footer(text=t("help_footer", interaction))
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 # ========================================
 # COMMANDES MODÉRATION / LOGS
