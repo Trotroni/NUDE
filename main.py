@@ -259,13 +259,29 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    # Ignorer les messages du bot lui-même
     if message.author == bot.user:
         return
-    if message.content.startswith('/'):
-        command_name = message.content[1:].split()[0].lower()
+
+    # Vérifier si le message contient un '/'
+    if '/' in message.content:
+        command_name = message.content.split()[0].lstrip('/').lower()
+
+        # Si la commande est custom, l'exécuter
         if command_name in custom_commands:
             await message.channel.send(custom_commands[command_name])
+        # Si la commande n'existe pas et n'est pas une slash command
+        elif not command_name in [cmd.name for cmd in bot.tree.walk_commands()]:
+            try:
+                # Essayer d'envoyer en DM
+                await message.author.send(f"❌ Je ne comprends pas la commande `{command_name}`.")
+            except discord.Forbidden:
+                # Sinon envoyer dans le canal de manière éphémère
+                await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.", delete_after=5)
+
+    # Traiter les autres commandes normalement
     await bot.process_commands(message)
+
 
 # ========================================
 # COMMANDES SLASH DE BASE
