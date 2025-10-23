@@ -517,46 +517,50 @@ async def logs_command(interaction: discord.Interaction):
 
 
 # /systemlog - Affiche les logs système à partir de fichiers séparés
-from discord import app_commands
-
 @bot.tree.command(name="systemlog", description="Affiche les logs système (systemd)")
 @app_commands.describe(
-    log_type="Type de log à afficher (error ou output)",
-    lines="Nombre de lignes à afficher (par défaut 30)"
+    type="Type de log à afficher (error ou output)",
+    lines="Nombre de lignes à afficher (0 pour envoyer le fichier entier)"
 )
-@app_commands.choices(log_type=[
-    app_commands.Choice(name="Erreur", value="error"),
-    app_commands.Choice(name="Sortie standard", value="output")
-])
-async def systemlog_command(interaction: discord.Interaction, log_type: app_commands.Choice[str], lines: int = 30):
-    await interaction.response.defer(ephemeral=True)
+async def systemlog_command(interaction: discord.Interaction, type: str, lines: int = 50):
+    """Affiche les logs système depuis les fichiers systemd_error.log ou systemd_output.log"""
+    await interaction.response.defer(ephemeral=False)
+
+    # Vérifier l’option choisie
+    if type not in ("error", "output"):
+        await interaction.followup.send("❌ Type invalide. Choisis `error` ou `output`.", ephemeral=True)
+        return
+
+    filename = LOGS_DIR / f"systemd_{type}.log"
+
+    if not filename.exists():
+        await interaction.followup.send(f"❌ Fichier `{filename.name}` introuvable.", ephemeral=True)
+        return
 
     try:
-        # Détermine le fichier à lire
-        filename = LOGS_DIR / ("systemd_error.log" if log_type.value == "error" else "systemd_output.log")
+        # Lire le contenu du fichier
+        lines_content = filename.read_text(encoding="utf-8").splitlines()
+        if lines > 0:
+            content = "\n".join(lines_content[-lines:])
+        else:
+            content = "\n".join(lines_content)
 
-        if not filename.exists():
-            await interaction.followup.send(f"❌ Fichier `{filename.name}` introuvable.", ephemeral=True)
-            return
-
-        # Lecture des dernières lignes
-        with open(filename, "r", encoding="utf-8") as f:
-            content = f.readlines()[-lines:]
-
-        content_text = "".join(content)
-        if len(content_text) > 1900:
-            content_text = content_text[-1900:]
-
-        embed = discord.Embed(
-            title=f"🖥️ Logs Système ({'Erreur' if log_type.value == 'error' else 'Output'})",
-            description=f"```{content_text}```",
-            color=discord.Color.red() if log_type.value == "error" else discord.Color.blue()
-        )
-
-        await interaction.followup.send(embed=embed, ephemeral=True)
-
+        # Si le contenu est trop long, envoyer le fichier directement
+        if len(content) > 1900:
+            await interaction.followup.send(
+                content=f"📦 Fichier trop long, envoi du fichier `{filename.name}` complet :",
+                file=discord.File(filename)
+            )
+        else:
+            embed = discord.Embed(
+                title=f"🖥️ Logs Système ({type.capitalize()})",
+                description=f"```{content}```",
+                color=discord.Color.blue()
+            )
+            await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"❌ Erreur lecture logs système: {e}", ephemeral=True)
+        await interaction.followup.send(f"❌ Erreur lecture logs : {e}")
+
 
 
 # ========================================
