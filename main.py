@@ -517,25 +517,47 @@ async def logs_command(interaction: discord.Interaction):
 
 
 # /systemlog - Affiche les logs système à partir de fichiers séparés
+from discord import app_commands
+
 @bot.tree.command(name="systemlog", description="Affiche les logs système (systemd)")
-@app_commands.describe(error="Afficher les erreurs au lieu de la sortie standard")
-async def systemlog_command(interaction: discord.Interaction, error: bool = False):
+@app_commands.describe(
+    log_type="Type de log à afficher (error ou output)",
+    lines="Nombre de lignes à afficher (par défaut 30)"
+)
+@app_commands.choices(log_type=[
+    app_commands.Choice(name="Erreur", value="error"),
+    app_commands.Choice(name="Sortie standard", value="output")
+])
+async def systemlog_command(interaction: discord.Interaction, log_type: app_commands.Choice[str], lines: int = 30):
     await interaction.response.defer(ephemeral=True)
+
     try:
-        filename = LOGS_DIR / ("systemd_error.log" if error else "systemd_output.log")
+        # Détermine le fichier à lire
+        filename = LOGS_DIR / ("systemd_error.log" if log_type.value == "error" else "systemd_output.log")
+
         if not filename.exists():
-            await interaction.followup.send(f"❌ Fichier {filename.name} introuvable.", ephemeral=True)
+            await interaction.followup.send(f"❌ Fichier `{filename.name}` introuvable.", ephemeral=True)
             return
 
-        content = filename.read_text(encoding="utf-8")[-1900:]  # tronque si trop long
+        # Lecture des dernières lignes
+        with open(filename, "r", encoding="utf-8") as f:
+            content = f.readlines()[-lines:]
+
+        content_text = "".join(content)
+        if len(content_text) > 1900:
+            content_text = content_text[-1900:]
+
         embed = discord.Embed(
-            title=f"🖥️ Logs Système ({'Erreur' if error else 'Output'})",
-            description=f"```{content}```",
-            color=discord.Color.blue()
+            title=f"🖥️ Logs Système ({'Erreur' if log_type.value == 'error' else 'Output'})",
+            description=f"```{content_text}```",
+            color=discord.Color.red() if log_type.value == "error" else discord.Color.blue()
         )
+
         await interaction.followup.send(embed=embed, ephemeral=True)
+
     except Exception as e:
         await interaction.followup.send(f"❌ Erreur lecture logs système: {e}", ephemeral=True)
+
 
 # ========================================
 # COMMANDES SYSTÈME
