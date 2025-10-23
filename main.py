@@ -162,19 +162,19 @@ def is_admin(interaction: discord.Interaction) -> bool:
 
 
 
-    # Envoyer une notification de démarrage
-    if CHANNEL_ID_BOT:
-        try:
-            channel = bot.get_channel(int(CHANNEL_ID_BOT))
-            if channel:
-                await channel.send(lang_manager.get(
-                    "bot_online",
-                    datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                ))
-            else:
-                logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
-        except Exception as e:
-            logger.error(f"❌ Impossible d'envoyer la notification de démarrage : {e}")
+# Envoyer une notification de démarrage
+if CHANNEL_ID_BOT:
+    try:
+        channel = bot.get_channel(int(CHANNEL_ID_BOT))
+        if channel:
+            await channel.send(lang_manager.get(
+                "bot_online",
+                datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ))
+        else:
+            logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
+    except Exception as e:
+        logger.error(f"❌ Impossible d'envoyer la notification de démarrage : {e}")
 
 
 
