@@ -4,6 +4,8 @@
 Bot Discord complet avec commandes CSV, multilingue, modération et logs
 Nécessite: discord.py 2.x, python-dotenv
 Installation: pip install discord.py python-dotenv
+
+v.4.2.0 - 2025-10-23
 """
 
 # ========================================
