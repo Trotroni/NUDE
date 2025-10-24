@@ -5,13 +5,12 @@
 ```
 votre_projet/
 ├── main.py                  # Script principal du bot
-├── .env                     # Variables d'environnement
+├── var.env                  # Variables d'environnement
+├── token.env                # Variables d'environnement (private)
 ├── commands.csv             # Commandes personnalisées
 ├── languages/               # 📂 Dossier des traductions
-│   ├── fr.json             # Français (par défaut)
-│   ├── en.json             # Anglais
-│   └── es.json             # Espagnol (exemple)
-└── logs/                    # Logs du bot
+│   ├── fr.json              # Français (par défaut)
+└── data/                    # Logs du bot
 ```
 
 ## 🚀 Installation rapide
