@@ -1,6 +1,6 @@
 # Fichiers d'environnement
 token.env
-.env
+
 
 # Logs
 logs/
@@ -10,3 +10,4 @@ __pycache__/
 *.pyc
 
 .DS_Store
+

@@ -24,9 +24,6 @@
   "create_exists": "⚠️ La commande `/{name}` existe déjà. Utilisez `/modif` pour la modifier.",
   "create_success": "✅ Commande `/{name}` créée avec succès !",
   "create_error": "❌ Erreur lors de la sauvegarde de la commande.",
-  "modif_not_found": "⚠️ La commande `/{name}` n'existe pas. Utilisez `/create` pour la créer.",
-  "modif_success": "✅ Commande `/{name}` modifiée avec succès !",
-  "modif_error": "❌ Erreur lors de la sauvegarde de la commande.",
   "reload_success": "✅ Commandes rechargées ! {count} commande(s) disponible(s).",
   "reload_error": "❌ Erreur lors du rechargement : {error}",
   "upgrade_updating": "🔄 Mise à jour du bot en cours...",
@@ -47,5 +44,12 @@
   "language_current": "Langue actuelle : **{language}**",
   "language_available": "Langues disponibles :",
   "language_usage": "Utilisez /language <code> pour changer de langue",
-  "language_invalid": "❌ Langue `{lang}` non disponible. Utilisez `/language` pour voir les langues disponibles."
+  "language_invalid": "❌ Langue `{lang}` non disponible. Utilisez `/language` pour voir les langues disponibles.",
+  "permission_denied": "❌ Permission refusée.",
+  "don_t_understand": "❌ Je ne comprends pas la commande `{command_name}`.",
+  "modif_not_found": "❌ La commande personnalisée `{name}` n'existe pas.",
+  "modif_no_change": "⚠️ Aucun changement spécifié pour la commande `{name}`.",
+  "modif_name_exists": "❌ Une autre commande du nom `{name}` existe déjà.",
+  "modif_success": "✅ La commande personnalisée `{name}` a été mise à jour avec succès.",
+  "modif_error": "⚠️ Une erreur est survenue lors de la mise à jour de la commande `{name}`."
 }

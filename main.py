@@ -19,6 +19,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from collections import defaultdict
+from typing import Optional
 
 import discord
 from discord import app_commands
@@ -312,10 +313,11 @@ async def on_message(message):
         known = [cmd.name for cmd in bot.tree.walk_commands()]
         if command_name not in known:
             try:
-                await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.")
-            except discord.Forbidden:
-                await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.", delete_after=5)
-
+                await message.channel.send(t("don_t_understand", command_name=command_name))
+            except Exception as e:
+                logger.error(f"Erreur en envoyant le message: {e}")
+            finally:
+                logger.info(f"Commande inconnue: {command_name}")
     await bot.process_commands(message)
 
 
@@ -420,12 +422,119 @@ async def create_command(interaction: discord.Interaction, name: str, response: 
         await interaction.response.send_message(t("create_error", interaction), ephemeral=EPHEMERAL_GLOBAL
 )
 
+@bot.tree.command(name="modif", description="Modifie le nom et/ou la réponse d'une commande personnalisée")
+@app_commands.describe(
+    old_name="Nom actuel de la commande à modifier",
+    new_name="Nouveau nom de la commande (optionnel)",
+    new_response="Nouvelle réponse du bot (optionnel)"
+)
+async def modify_command(
+    interaction: discord.Interaction,
+    old_name: str,
+    new_name: Optional[str] = None,
+    new_response: Optional[str] = None
+):
+    old_name_lower = old_name.lower().strip()
+
+    # Vérifie si la commande existe
+    if old_name_lower not in custom_commands:
+        await interaction.response.send_message(
+            t("modif_not_found", interaction, name=old_name_lower),
+            ephemeral=EPHEMERAL_GLOBAL
+        )
+        return
+
+    # Aucun changement fourni
+    if not new_name and not new_response:
+        await interaction.response.send_message(
+            t("modif_no_change", interaction, name=old_name_lower),
+            ephemeral=EPHEMERAL_GLOBAL
+        )
+        return
+
+    # Sauvegarde de la commande originale
+    old_response = custom_commands[old_name_lower]
+    success = False
+
+    try:
+        # Si un nouveau nom est fourni
+        if new_name:
+            new_name_lower = new_name.lower().strip()
+            # Empêche d'écraser une autre commande existante
+            if new_name_lower != old_name_lower and new_name_lower in custom_commands:
+                await interaction.response.send_message(
+                    t("modif_name_exists", interaction, name=new_name_lower),
+                    ephemeral=EPHEMERAL_GLOBAL
+                )
+                return
+            # Déplace la commande
+            custom_commands[new_name_lower] = custom_commands.pop(old_name_lower)
+            old_name_lower = new_name_lower  # met à jour la clé
+
+        # Si une nouvelle réponse est donnée
+        if new_response:
+            custom_commands[old_name_lower] = new_response.strip()
+
+        # Sauvegarde
+        success = save_custom_commands()
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la modification d'une commande : {e}")
+        success = False
+
+    if success:
+        await interaction.response.send_message(
+            t("modif_success", interaction, name=old_name_lower),
+            ephemeral=EPHEMERAL_GLOBAL
+        )
+    else:
+        await interaction.response.send_message(
+            t("modif_error", interaction, name=old_name_lower),
+            ephemeral=EPHEMERAL_GLOBAL
+        )
+
+@bot.tree.command(name="delete", description="Supprime une commande personnalisée existante")
+@app_commands.describe(name="Nom de la commande à supprimer")
+async def delete_command(interaction: discord.Interaction, name: str):
+    name_lower = name.lower().strip()
+
+    # Vérifie si la commande existe
+    if name_lower not in custom_commands:
+        await interaction.response.send_message(
+            t("delete_not_found", interaction, name=name_lower),
+            ephemeral=EPHEMERAL_GLOBAL
+        )
+        return
+
+    # Supprime la commande
+    try:
+        del custom_commands[name_lower]
+
+        # Sauvegarde les changements
+        if save_custom_commands():
+            await interaction.response.send_message(
+                t("delete_success", interaction, name=name_lower),
+                ephemeral=EPHEMERAL_GLOBAL
+            )
+        else:
+            await interaction.response.send_message(
+                t("delete_error", interaction, name=name_lower),
+                ephemeral=EPHEMERAL_GLOBAL
+            )
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la suppression d'une commande : {e}")
+        await interaction.response.send_message(
+            t("delete_exception", interaction, name=name_lower),
+            ephemeral=EPHEMERAL_GLOBAL
+        )
+
 # --------- Modération ---------
 @bot.tree.command(name="warn", description="Met un warn à un utilisateur")
 @app_commands.describe(user="Utilisateur", reason="Raison")
 async def warn_command(interaction: discord.Interaction, user: discord.Member, reason: str):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+        await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
         return
     uid = user.id
@@ -461,7 +570,7 @@ async def warns_check(interaction: discord.Interaction, user: discord.Member):
 @app_commands.describe(user="Utilisateur", number="Numéro du warn à supprimer (optionnel)")
 async def unwarn_command(interaction: discord.Interaction, user: discord.Member, number: int = None):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+        await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
         return
     uid = user.id
@@ -489,6 +598,15 @@ async def unwarn_command(interaction: discord.Interaction, user: discord.Member,
     save_warns(warns_data)
     await interaction.response.send_message(f"{user.mention} - {action}", ephemeral=EPHEMERAL_GLOBAL
 )
+#a finir
+
+@bot.tree.command(name="report", description="Signale un groupe de message au staff")
+#@app_commands.describe(nombre="Nombre de messages à signaler (10-50)", reason="Raison du signalement", )
+async def report_command(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "🚧 Fonctionnalité en construction.",
+        ephemeral=EPHEMERAL_GLOBAL
+    )
 
 # --------- Logs ---------
 @bot.tree.command(name="logs", description="Affiche les derniers logs du bot")
@@ -515,21 +633,29 @@ async def logs_command(interaction: discord.Interaction):
 # --------- Système ---------
 
 @bot.tree.command(name="reboot", description="Redémarre le bot")
-#async def reboot_command(interaction: discord.Interaction):
+async def reboot_command(interaction: discord.Interaction):
+    await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
+"""
+async def reboot_command(interaction: discord.Interaction):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
-)
-        return
+        await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
+    )
+    return
+
     await interaction.response.send_message("🔄 Redémarrage du bot...", ephemeral=EPHEMERAL_GLOBAL
-)
+    )
+
     logger.info("🔄 Redémarrage demandé par %s", interaction.user)
     await bot.close()
     os.execv(sys.executable, [sys.executable] + sys.argv)
-
+"""
 @bot.tree.command(name="upgrade", description="Met à jour le bot depuis Git")
-#async def upgrade_command(interaction: discord.Interaction):
+async def upgrade_command(interaction: discord.Interaction):
+    await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
+"""
+async def upgrade_command(interaction: discord.Interaction):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+        await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
         return
     await interaction.response.send_message("⬆️ Mise à jour du bot en cours...", ephemeral=EPHEMERAL_GLOBAL
@@ -545,13 +671,14 @@ async def logs_command(interaction: discord.Interaction):
         logger.error(f"Erreur lors de la mise à jour: {e}")
         await interaction.followup.send(f"❌ Erreur mise à jour: {e}", ephemeral=EPHEMERAL_GLOBAL
 )
+"""
 
 @bot.tree.command(name="ephemeral", description="Active ou désactive les messages éphémères")
 @app_commands.describe(option="true pour activer, false pour désactiver")
 async def ephemeral_command(interaction: discord.Interaction, option: bool):
     global EPHEMERAL_GLOBAL
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=True
+        await interaction.response.send_message("permission_denied", ephemeral=True
 )
         return
 
