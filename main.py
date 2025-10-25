@@ -287,6 +287,23 @@ async def on_ready():
         try:
             channel = bot.get_channel(int(CHANNEL_ID_BOT))
             if channel:
+                embed = discord.Embed(title=t("help_title", interaction), color=discord.Color.blue())
+    embed.add_field(name=t("help_system", interaction),
+                    value=f"🟢 `/ping`\n🟡 `/reboot`\n🟡 `/upgrade`\n🟡 `/bot_update`",
+                    inline=False)
+    embed.add_field(name=t("help_csv", interaction),
+                    value=f"🟢 `/create`\n🟢 `/modif`\n🟢 `/delete`\n🟢 `/list`\n🟢 `/reload_commands`",
+                    inline=False)
+    embed.add_field(name="⚠️ Modération",
+                    value=f"🟠 `/warn`\n🟠 `/warns`\n🟠 `/unwarn`",
+                    inline=False)
+    embed.add_field(name="📜 Logs",
+                    value=f"🔵 `/logs`\n🔵 `/systemlog`",
+                    inline=False)
+    embed.add_field(name=t("help_lang", interaction),
+                    value=f"🟢 `/language`", inline=False)
+    embed.set_footer(text=t("help_footer", interaction))
+    await interaction.response.send_message(embed=embed, ephemeral=EPHEMERAL_GLOBAL
                 await channel.send(lang_manager.get(
                     "bot_online", 
                     time= datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
