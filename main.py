@@ -39,7 +39,7 @@ LANG_DIR.mkdir(exist_ok=True)
 COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
-VERSION = "v.5.2.0 - 2025-10-25"
+VERSION = "v.5.2.1-beta - 2025-10-25"
 AUTOR = "Trotroni"
 
 # ========================================
@@ -279,7 +279,7 @@ async def on_ready():
                 await channel.send(lang_manager.get(
                     "bot_online", 
                     time= datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-                    version=VERSION
+                    version=VERSION,
                     autor=AUTOR
                     ))
             else:
@@ -323,10 +323,28 @@ async def on_message(message):
 # COMMANDES SLASH
 # ========================================
 
-# --------- Ping / Help ---------
+# --------- Ping / Info / Help ---------
 @bot.tree.command(name="ping", description="Teste la réactivité du bot")
 async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message(t("ping_response", interaction), ephemeral=EPHEMERAL_GLOBAL
+    await interaction.response.send_message(
+        t(
+            "ping_response",
+            interaction,
+            time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ),
+        ephemeral=EPHEMERAL_GLOBAL
+)
+
+@bot.tree.command(name="info", description="Info sur le bot")
+async def info(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        t(
+            "info_response",
+            interaction,
+            version=VERSION,
+            autor=AUTOR
+        ),
+        ephemeral=EPHEMERAL_GLOBAL
 )
 
 @bot.tree.command(name="help", description="Affiche toutes les commandes disponibles")
@@ -495,8 +513,9 @@ async def logs_command(interaction: discord.Interaction):
 )
 
 # --------- Système ---------
+
 @bot.tree.command(name="reboot", description="Redémarre le bot")
-async def reboot_command(interaction: discord.Interaction):
+#async def reboot_command(interaction: discord.Interaction):
     if not is_admin(interaction):
         await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
 )
@@ -508,7 +527,7 @@ async def reboot_command(interaction: discord.Interaction):
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 @bot.tree.command(name="upgrade", description="Met à jour le bot depuis Git")
-async def upgrade_command(interaction: discord.Interaction):
+#async def upgrade_command(interaction: discord.Interaction):
     if not is_admin(interaction):
         await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
 )

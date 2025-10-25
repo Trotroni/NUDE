@@ -1,6 +1,7 @@
 {
   "language_name": "Français",
-  "ping_response": "Pong ! {datetime}",
+  "ping_response": "Pong ! {time}",
+  "info_response": "Version : {version} | Auteur : {autor}",
   "help_title": "📚 Aide - Commandes disponibles",
   "help_system": "⚙️ Commandes système",
   "help_csv": "📝 Gestion des commandes CSV",
