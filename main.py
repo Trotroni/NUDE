@@ -243,6 +243,7 @@ warns_data = load_warns()
 # ========================================
 # ÉVÉNEMENTS
 # ========================================
+
 @bot.event
 async def on_ready():
     logger.info(f"✅ Bot connecté en tant que {bot.user}")
@@ -277,7 +278,7 @@ async def on_ready():
                 logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
         except Exception as e:
             logger.error(f"❌ Impossible d'envoyer la notification de démarrage : {e}")
-
+'''
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -295,6 +296,38 @@ async def on_message(message):
                 await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.", delete_after=5)
 
     await bot.process_commands(message)
+'''
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # DEBUG
+    logger.debug("Message raw repr: %r", message.content)
+    logger.debug("startswith('/') -> %s", message.content.startswith('/'))
+
+    # Ne traiter que si le premier caractère est '/'
+    if message.content and message.content[0] == '/':
+        tokens = message.content.split()
+        if not tokens:
+            return
+        command_name = tokens[0].lstrip('/').lower()
+        logger.info("Commande détectée en on_message: %s", command_name)
+
+        if command_name in custom_commands:
+            await message.channel.send(custom_commands[command_name])
+            return
+
+        # vérifier si c'est une commande slash connue — si non informer en DM
+        known = [cmd.name for cmd in bot.tree.walk_commands()]
+        if command_name not in known:
+            try:
+                await message.author.send(f"❌ Je ne comprends pas la commande `{command_name}`.")
+            except discord.Forbidden:
+                await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.", delete_after=5)
+
+    await bot.process_commands(message)
+
 
 # ========================================
 # COMMANDES SLASH
