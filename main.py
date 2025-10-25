@@ -278,25 +278,7 @@ async def on_ready():
                 logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
         except Exception as e:
             logger.error(f"❌ Impossible d'envoyer la notification de démarrage : {e}")
-'''
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
 
-    # On ne traite que les messages commençant par "/"
-    if message.content.startswith('/'):
-        command_name = message.content.split()[0].lstrip('/').lower()
-        if command_name in custom_commands:
-            await message.channel.send(custom_commands[command_name])
-        elif command_name not in [cmd.name for cmd in bot.tree.walk_commands()]:
-            try:
-                await message.author.send(f"❌ Je ne comprends pas la commande `{command_name}`.")
-            except discord.Forbidden:
-                await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.", delete_after=5)
-
-    await bot.process_commands(message)
-'''
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -322,7 +304,7 @@ async def on_message(message):
         known = [cmd.name for cmd in bot.tree.walk_commands()]
         if command_name not in known:
             try:
-                await message.author.send(f"❌ Je ne comprends pas la commande `{command_name}`.")
+                await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.")
             except discord.Forbidden:
                 await message.channel.send(f"❌ Je ne comprends pas la commande `{command_name}`.", delete_after=5)
 
