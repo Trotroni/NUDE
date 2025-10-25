@@ -39,7 +39,8 @@ LANG_DIR.mkdir(exist_ok=True)
 COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
-VERSION = "v.4.2.0 - 2025-10-23"
+VERSION = "v.5.2.0 - 2025-10-25"
+AUTOR = "Trotroni"
 
 # ========================================
 # LOGGING
@@ -276,9 +277,11 @@ async def on_ready():
             channel = bot.get_channel(int(CHANNEL_ID_BOT))
             if channel:
                 await channel.send(lang_manager.get(
-                    "bot_online",
-                    datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                ))
+                    "bot_online", 
+                    time= datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                    version=VERSION
+                    autor=AUTOR
+                    ))
             else:
                 logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
         except Exception as e:
