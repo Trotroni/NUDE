@@ -40,7 +40,7 @@ LANG_DIR.mkdir(exist_ok=True)
 COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
-VERSION = "v.5.4.0 - 2025-10-25"
+VERSION = "v.5.5.0 - 2025-10-25"
 AUTOR = "Trotroni"
 
 # ========================================
@@ -254,6 +254,7 @@ warns_data = load_warns()
 @bot.event
 async def on_ready():
     logger.info(f"✅ Bot connecté en tant que {bot.user}")
+
     try:
         lang_manager.load_languages()
     except Exception as e:
@@ -266,12 +267,21 @@ async def on_ready():
     try:
         if GUILD_ID:
             guild = discord.Object(id=int(GUILD_ID))
-            bot.tree.copy_global_to(guild=guild)
+            guild_name = bot.get_guild(int(GUILD_ID))
+            existing = await bot.tree.fetch_commands(guild=guild)
+            for cmd in existing:
+                await bot.tree.remove_command(cmd.name, guild=guild)
+
+            # Sync toutes les commandes pour la guilde
             await bot.tree.sync(guild=guild)
+            logger.info(f"✅ Commandes synchronisées sur la guild: {guild_name} | ID: {GUILD_ID}")
         else:
-            await bot.tree.sync()
+            await bot.tree.sync(guild=guild)  # Sync guild uniquement : supprimer guild=guild pour global
+            logger.info("✅ Commandes globales synchronisées")
     except Exception as e:
         logger.error(f"Erreur synchronisation commandes : {e}")
+
+
 
     if CHANNEL_ID_BOT:
         try:
@@ -283,6 +293,7 @@ async def on_ready():
                     version=VERSION,
                     autor=AUTOR
                     ))
+                logger.info(f"✅ Message envoyé dans le salon: {channel} | ID: {CHANNEL_ID_BOT}")
             else:
                 logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
         except Exception as e:
