@@ -40,7 +40,7 @@ LANG_DIR.mkdir(exist_ok=True)
 COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
-VERSION = "v.5.3.0 - 2025-10-25"
+VERSION = "v.5.4.0 - 2025-10-25"
 AUTOR = "Trotroni"
 
 # ========================================
@@ -339,6 +339,9 @@ async def ping(interaction: discord.Interaction):
 
 @bot.tree.command(name="info", description="Info sur le bot")
 async def info(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     await interaction.response.send_message(
         t(
             "info_response",
@@ -351,6 +354,9 @@ async def info(interaction: discord.Interaction):
 
 @bot.tree.command(name="help", description="Affiche toutes les commandes disponibles")
 async def help_command(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     embed = discord.Embed(title=t("help_title", interaction), color=discord.Color.blue())
     embed.add_field(name=t("help_system", interaction),
                     value=f"🟢 `/ping`\n🟡 `/reboot`\n🟡 `/upgrade`\n🟡 `/bot_update`",
@@ -374,6 +380,9 @@ async def help_command(interaction: discord.Interaction):
 @bot.tree.command(name="language", description="Change la langue du bot")
 @app_commands.describe(lang="Code de la langue (ex: fr, en)")
 async def language_command(interaction: discord.Interaction, lang: str = None):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     if lang is None:
         embed = discord.Embed(title=t("language_title", interaction), color=discord.Color.blue())
         current_lang = lang_manager.user_preferences.get(interaction.user.id, DEFAULT_LANGUAGE)
@@ -396,6 +405,9 @@ async def language_command(interaction: discord.Interaction, lang: str = None):
 # --------- CSV Commands ---------
 @bot.tree.command(name="list", description="Liste toutes les commandes personnalisées")
 async def list_commands(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     if not custom_commands:
         await interaction.response.send_message(t("list_empty", interaction), ephemeral=EPHEMERAL_GLOBAL
 )
@@ -409,6 +421,9 @@ async def list_commands(interaction: discord.Interaction):
 @bot.tree.command(name="create", description="Crée une nouvelle commande personnalisée")
 @app_commands.describe(name="Nom de la commande", response="Réponse du bot")
 async def create_command(interaction: discord.Interaction, name: str, response: str):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     name_lower = name.lower().strip()
     if name_lower in custom_commands:
         await interaction.response.send_message(t("create_exists", interaction, name=name_lower), ephemeral=EPHEMERAL_GLOBAL
@@ -434,6 +449,9 @@ async def modify_command(
     new_name: Optional[str] = None,
     new_response: Optional[str] = None
 ):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     old_name_lower = old_name.lower().strip()
 
     # Vérifie si la commande existe
@@ -496,6 +514,9 @@ async def modify_command(
 @bot.tree.command(name="delete", description="Supprime une commande personnalisée existante")
 @app_commands.describe(name="Nom de la commande à supprimer")
 async def delete_command(interaction: discord.Interaction, name: str):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     name_lower = name.lower().strip()
 
     # Vérifie si la commande existe
@@ -533,6 +554,9 @@ async def delete_command(interaction: discord.Interaction, name: str):
 @bot.tree.command(name="warn", description="Met un warn à un utilisateur")
 @app_commands.describe(user="Utilisateur", reason="Raison")
 async def warn_command(interaction: discord.Interaction, user: discord.Member, reason: str):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
@@ -554,6 +578,9 @@ async def warn_command(interaction: discord.Interaction, user: discord.Member, r
 @bot.tree.command(name="warns", description="Voir warns utilisateur")
 @app_commands.describe(user="Utilisateur")
 async def warns_check(interaction: discord.Interaction, user: discord.Member):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     uid = user.id
     data = warns_data.get(uid)
     if not data:
@@ -569,6 +596,9 @@ async def warns_check(interaction: discord.Interaction, user: discord.Member):
 @bot.tree.command(name="unwarn", description="Supprime un warn d'un utilisateur")
 @app_commands.describe(user="Utilisateur", number="Numéro du warn à supprimer (optionnel)")
 async def unwarn_command(interaction: discord.Interaction, user: discord.Member, number: int = None):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
@@ -603,6 +633,9 @@ async def unwarn_command(interaction: discord.Interaction, user: discord.Member,
 @bot.tree.command(name="report", description="Signale un groupe de message au staff")
 #@app_commands.describe(nombre="Nombre de messages à signaler (10-50)", reason="Raison du signalement", )
 async def report_command(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     await interaction.response.send_message(
         "🚧 Fonctionnalité en construction.",
         ephemeral=EPHEMERAL_GLOBAL
@@ -611,6 +644,9 @@ async def report_command(interaction: discord.Interaction):
 # --------- Logs ---------
 @bot.tree.command(name="logs", description="Affiche les derniers logs du bot")
 async def logs_command(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     await interaction.response.defer(ephemeral=EPHEMERAL_GLOBAL
 )
     try:
@@ -632,11 +668,13 @@ async def logs_command(interaction: discord.Interaction):
 
 # --------- Système ---------
 
-@bot.tree.command(name="reboot", description="Redémarre le bot")
+@bot.tree.command(name="reboot", description="Redémarre le bot") 
 async def reboot_command(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
 """
-async def reboot_command(interaction: discord.Interaction):
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
     )
@@ -651,9 +689,11 @@ async def reboot_command(interaction: discord.Interaction):
 """
 @bot.tree.command(name="upgrade", description="Met à jour le bot depuis Git")
 async def upgrade_command(interaction: discord.Interaction):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
 """
-async def upgrade_command(interaction: discord.Interaction):
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
@@ -676,6 +716,9 @@ async def upgrade_command(interaction: discord.Interaction):
 @bot.tree.command(name="ephemeral", description="Active ou désactive les messages éphémères")
 @app_commands.describe(option="true pour activer, false pour désactiver")
 async def ephemeral_command(interaction: discord.Interaction, option: bool):
+    user = interaction.user
+    name = interaction.command.name
+    logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
     global EPHEMERAL_GLOBAL
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=True
