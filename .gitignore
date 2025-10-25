@@ -1,5 +1,5 @@
 # Fichiers d'environnement
-var.env
+token.env
 .env
 
 # Logs

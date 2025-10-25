@@ -25,37 +25,6 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-# ========================================
-# CONFIGURATION ET INITIALISATION
-# ========================================
-load_dotenv(dotenv_path="var.env")
-load_dotenv(dotenv_path="token.env", override=True)
-
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-GUILD_ID = os.getenv("GUILD_ID")
-CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
-ADMIN_ROLE_ID = os.getenv("ADMIN_ROLE_ID")
-DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "fr")
-
-if not DISCORD_TOKEN:
-    raise ValueError("❌ DISCORD_TOKEN manquant dans les fichiers .env")
-
-if not GUILD_ID:
-    raise ValueError("❌ GUILD_ID manquant dans les fichiers .env")
-
-if not CHANNEL_ID_BOT:
-    raise ValueError("❌ CHANNEL_ID_BOT manquant dans les fichiers .env")
-
-if not ADMIN_ROLE_ID:   
-    raise ValueError("❌ ADMIN_ROLE_ID manquant dans les fichiers .env")
-
-if not DEFAULT_LANGUAGE:
-    raise ValueError("❌ DEFAULT_LANGUAGE manquant dans les fichiers .env")
-
-ephemeral_env = os.getenv("EPHEMERAL_GLOBAL", "true").lower()
-EPHEMERAL_GLOBAL = ephemeral_env == "true"
-if ephemeral_env not in ["true", "false"]:
-    raise ValueError("❌ EPHEMERAL_GLOBAL doit être 'true' ou 'false'")
 
 # Chemins des fichiers
 BASE_DIR = Path(__file__).parent
@@ -85,6 +54,42 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("DiscordBot")
+
+# ========================================
+# CONFIGURATION ET INITIALISATION
+# ========================================
+
+load_dotenv(dotenv_path="var.env")
+load_dotenv(dotenv_path="token.env", override=True)
+
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = os.getenv("GUILD_ID")
+CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
+ADMIN_ROLE_ID = os.getenv("ADMIN_ROLE_ID")
+DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "fr")
+ephemeral_env = os.getenv("EPHEMERAL_GLOBAL", "true").lower()
+EPHEMERAL_GLOBAL = ephemeral_env == "true"
+
+if not DISCORD_TOKEN:
+    logger.error("❌ DISCORD_TOKEN manquant dans les fichiers .env")
+    raise ValueError("❌ DISCORD_TOKEN manquant dans les fichiers .env")
+elif not GUILD_ID:
+    logger.error("❌ GUILD_ID manquant dans les fichiers .env")
+    raise ValueError("❌ GUILD_ID manquant dans les fichiers .env")
+elif not CHANNEL_ID_BOT:
+    logger.error("❌ CHANNEL_ID_BOT manquant dans les fichiers .env")
+    raise ValueError("❌ CHANNEL_ID_BOT manquant dans les fichiers .env")
+elif not ADMIN_ROLE_ID:
+    logger.error("❌ ADMIN_ROLE_ID manquant dans les fichiers .env")
+    raise ValueError("❌ ADMIN_ROLE_ID manquant dans les fichiers .env")
+elif not DEFAULT_LANGUAGE:
+    logger.error("❌ DEFAULT_LANGUAGE manquant dans les fichiers .env")
+    raise ValueError("❌ DEFAULT_LANGUAGE manquant dans les fichiers .env")
+elif ephemeral_env not in ["true", "false"]:
+    logger.error("❌ EPHEMERAL_GLOBAL doit être 'true' ou 'false'") 
+    raise ValueError("❌ EPHEMERAL_GLOBAL doit être 'true' ou 'false'")
+
+logger.info(f"✅ Configuration chargée: GUILD_ID={GUILD_ID}, CHANNEL_ID_BOT={CHANNEL_ID_BOT}, ADMIN_ROLE_ID={ADMIN_ROLE_ID}, DEFAULT_LANGUAGE={DEFAULT_LANGUAGE}, EPHEMERAL_GLOBAL={EPHEMERAL_GLOBAL}")
 
 # ========================================
 # GESTION DES LANGUES
