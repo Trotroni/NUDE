@@ -40,6 +40,23 @@ DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "fr")
 if not DISCORD_TOKEN:
     raise ValueError("❌ DISCORD_TOKEN manquant dans les fichiers .env")
 
+if not GUILD_ID:
+    raise ValueError("❌ GUILD_ID manquant dans les fichiers .env")
+
+if not CHANNEL_ID_BOT:
+    raise ValueError("❌ CHANNEL_ID_BOT manquant dans les fichiers .env")
+
+if not ADMIN_ROLE_ID:   
+    raise ValueError("❌ ADMIN_ROLE_ID manquant dans les fichiers .env")
+
+if not DEFAULT_LANGUAGE:
+    raise ValueError("❌ DEFAULT_LANGUAGE manquant dans les fichiers .env")
+
+ephemeral_env = os.getenv("EPHEMERAL_GLOBAL", "true").lower()
+EPHEMERAL_GLOBAL = ephemeral_env == "true"
+if ephemeral_env not in ["true", "false"]:
+    raise ValueError("❌ EPHEMERAL_GLOBAL doit être 'true' ou 'false'")
+
 # Chemins des fichiers
 BASE_DIR = Path(__file__).parent
 COMMANDS_CSV = BASE_DIR / "commands.csv"
@@ -160,6 +177,10 @@ async def check_command_cooldown(user_id: int, channel) -> bool:
     command_cooldowns[user_id] = now + COMMAND_COOLDOWN
     return True
 
+def get_ephemeral(interaction: discord.Interaction, default: bool = True) -> bool:
+    """Renvoie True si le message doit être éphémère."""
+    return EPHEMERAL_GLOBAL if interaction else default
+
 # ========================================
 # COMMANDES CSV
 # ========================================
@@ -170,7 +191,7 @@ def load_custom_commands():
         COMMANDS_CSV.touch()
         return
     try:
-        with open(COMMANDS_CSV, 'r', encoding='utf-8', newline='') as f:
+        with open(COMMANDS_CSV, 'r', encoding='utf-8', newline="") as f:
             reader = csv.reader(f)
             for row in reader:
                 if len(row) >= 2:
@@ -181,7 +202,7 @@ def load_custom_commands():
 
 def save_custom_commands():
     try:
-        with open(COMMANDS_CSV, 'w', encoding='utf-8', newline='') as f:
+        with open(COMMANDS_CSV, 'w', encoding='utf-8', newline="") as f:
             writer = csv.writer(f)
             for name, resp in custom_commands.items():
                 writer.writerow([name, resp])
@@ -262,7 +283,8 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    if '/' in message.content:
+    # On ne traite que les messages commençant par "/"
+    if message.content.startswith('/'):
         command_name = message.content.split()[0].lstrip('/').lower()
         if command_name in custom_commands:
             await message.channel.send(custom_commands[command_name])
@@ -281,7 +303,8 @@ async def on_message(message):
 # --------- Ping / Help ---------
 @bot.tree.command(name="ping", description="Teste la réactivité du bot")
 async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message(t("ping_response", interaction), ephemeral=True)
+    await interaction.response.send_message(t("ping_response", interaction), ephemeral=EPHEMERAL_GLOBAL
+)
 
 @bot.tree.command(name="help", description="Affiche toutes les commandes disponibles")
 async def help_command(interaction: discord.Interaction):
@@ -301,7 +324,8 @@ async def help_command(interaction: discord.Interaction):
     embed.add_field(name=t("help_lang", interaction),
                     value=f"🟢 `/language`", inline=False)
     embed.set_footer(text=t("help_footer", interaction))
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed, ephemeral=EPHEMERAL_GLOBAL
+)
 
 # --------- Language ---------
 @bot.tree.command(name="language", description="Change la langue du bot")
@@ -315,51 +339,61 @@ async def language_command(interaction: discord.Interaction, lang: str = None):
         for lang_code in sorted(lang_manager.available_languages):
             embed.description += f"• `{lang_code}` - {lang_manager.get_language_name(lang_code)}\n"
         embed.set_footer(text=t("language_usage", interaction))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=EPHEMERAL_GLOBAL
+)
     else:
         lang = lang.lower().strip()
         if lang_manager.set_user_language(interaction.user.id, lang):
-            await interaction.response.send_message(t("language_changed", interaction, language=lang_manager.get_language_name(lang)), ephemeral=True)
+            await interaction.response.send_message(t("language_changed", interaction, language=lang_manager.get_language_name(lang)), ephemeral=EPHEMERAL_GLOBAL
+)
         else:
-            await interaction.response.send_message(t("language_invalid", interaction, lang=lang), ephemeral=True)
+            await interaction.response.send_message(t("language_invalid", interaction, lang=lang), ephemeral=EPHEMERAL_GLOBAL
+)
 
 # --------- CSV Commands ---------
 @bot.tree.command(name="list", description="Liste toutes les commandes personnalisées")
 async def list_commands(interaction: discord.Interaction):
     if not custom_commands:
-        await interaction.response.send_message(t("list_empty", interaction), ephemeral=True)
+        await interaction.response.send_message(t("list_empty", interaction), ephemeral=EPHEMERAL_GLOBAL
+)
         return
     embed = discord.Embed(title=t("list_title", interaction), color=discord.Color.green())
     embed.description = "\n".join([f"• `/{name}`" for name in sorted(custom_commands.keys())])
     embed.set_footer(text=t("list_footer", interaction, count=len(custom_commands)))
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed, ephemeral=EPHEMERAL_GLOBAL
+)
 
 @bot.tree.command(name="create", description="Crée une nouvelle commande personnalisée")
 @app_commands.describe(name="Nom de la commande", response="Réponse du bot")
 async def create_command(interaction: discord.Interaction, name: str, response: str):
     name_lower = name.lower().strip()
     if name_lower in custom_commands:
-        await interaction.response.send_message(t("create_exists", interaction, name=name_lower), ephemeral=True)
+        await interaction.response.send_message(t("create_exists", interaction, name=name_lower), ephemeral=EPHEMERAL_GLOBAL
+)
         return
     custom_commands[name_lower] = response.strip()
     if save_custom_commands():
-        await interaction.response.send_message(t("create_success", interaction, name=name_lower), ephemeral=True)
+        await interaction.response.send_message(t("create_success", interaction, name=name_lower), ephemeral=EPHEMERAL_GLOBAL
+)
     else:
-        await interaction.response.send_message(t("create_error", interaction), ephemeral=True)
+        await interaction.response.send_message(t("create_error", interaction), ephemeral=EPHEMERAL_GLOBAL
+)
 
 # --------- Modération ---------
 @bot.tree.command(name="warn", description="Met un warn à un utilisateur")
 @app_commands.describe(user="Utilisateur", reason="Raison")
 async def warn_command(interaction: discord.Interaction, user: discord.Member, reason: str):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+)
         return
     uid = user.id
     warns_data.setdefault(uid, {"count": 0, "reasons": []})
     warns_data[uid]["count"] += 1
     warns_data[uid]["reasons"].append(reason)
     save_warns(warns_data)
-    await interaction.response.send_message(f"{user.mention} reçoit un warn ({reason}). Total: {warns_data[uid]['count']}", ephemeral=True)
+    await interaction.response.send_message(f"{user.mention} reçoit un warn ({reason}). Total: {warns_data[uid]['count']}", ephemeral=EPHEMERAL_GLOBAL
+)
     if warns_data[uid]["count"] >= WARN_LIMIT:
         await interaction.channel.send(f"{user.mention} kick temporaire ({KICK_DURATION}s)")
         try:
@@ -373,23 +407,27 @@ async def warns_check(interaction: discord.Interaction, user: discord.Member):
     uid = user.id
     data = warns_data.get(uid)
     if not data:
-        await interaction.response.send_message(f"{user.mention} n'a aucun warn.", ephemeral=True)
+        await interaction.response.send_message(f"{user.mention} n'a aucun warn.", ephemeral=EPHEMERAL_GLOBAL
+)
         return
     msg = f"Warns pour {user.mention} :\n"
     for i, reason in enumerate(data["reasons"], start=1):
         msg += f"{i}. {reason}\n"
-    await interaction.response.send_message(msg, ephemeral=True)
+    await interaction.response.send_message(msg, ephemeral=EPHEMERAL_GLOBAL
+)
 
 @bot.tree.command(name="unwarn", description="Supprime un warn d'un utilisateur")
 @app_commands.describe(user="Utilisateur", number="Numéro du warn à supprimer (optionnel)")
 async def unwarn_command(interaction: discord.Interaction, user: discord.Member, number: int = None):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+)
         return
     uid = user.id
     data = warns_data.get(uid)
     if not data or data["count"] == 0:
-        await interaction.response.send_message(f"{user.mention} n'a aucun warn.", ephemeral=True)
+        await interaction.response.send_message(f"{user.mention} n'a aucun warn.", ephemeral=EPHEMERAL_GLOBAL
+)
         return
     if number is None:
         removed_reason = data["reasons"].pop()
@@ -397,7 +435,8 @@ async def unwarn_command(interaction: discord.Interaction, user: discord.Member,
         action = f"Le dernier warn a été supprimé : {removed_reason}"
     else:
         if number < 1 or number > data["count"]:
-            await interaction.response.send_message(f"Numéro de warn invalide. Total: {data['count']}", ephemeral=True)
+            await interaction.response.send_message(f"Numéro de warn invalide. Total: {data['count']}", ephemeral=EPHEMERAL_GLOBAL
+)
             return
         removed_reason = data["reasons"].pop(number - 1)
         data["count"] -= 1
@@ -407,33 +446,40 @@ async def unwarn_command(interaction: discord.Interaction, user: discord.Member,
     else:
         warns_data[uid] = data
     save_warns(warns_data)
-    await interaction.response.send_message(f"{user.mention} - {action}", ephemeral=True)
+    await interaction.response.send_message(f"{user.mention} - {action}", ephemeral=EPHEMERAL_GLOBAL
+)
 
 # --------- Logs ---------
 @bot.tree.command(name="logs", description="Affiche les derniers logs du bot")
 async def logs_command(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer(ephemeral=EPHEMERAL_GLOBAL
+)
     try:
         log_files = sorted(LOGS_DIR.glob("bot_*.log"), reverse=True)
         if not log_files:
-            await interaction.followup.send("❌ Aucun fichier de log trouvé.", ephemeral=True)
+            await interaction.followup.send("❌ Aucun fichier de log trouvé.", ephemeral=EPHEMERAL_GLOBAL
+)
             return
         latest_file = log_files[0]
         content = latest_file.read_text(encoding="utf-8")[-1900:]
         embed = discord.Embed(title=f"📜 Logs Bot ({latest_file.name})",
                               description=f"```{content}```",
                               color=discord.Color.green())
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=EPHEMERAL_GLOBAL
+)
     except Exception as e:
-        await interaction.followup.send(f"❌ Erreur lecture logs: {e}", ephemeral=True)
+        await interaction.followup.send(f"❌ Erreur lecture logs: {e}", ephemeral=EPHEMERAL_GLOBAL
+)
 
 # --------- Système ---------
 @bot.tree.command(name="reboot", description="Redémarre le bot")
 async def reboot_command(interaction: discord.Interaction):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+)
         return
-    await interaction.response.send_message("🔄 Redémarrage du bot...", ephemeral=True)
+    await interaction.response.send_message("🔄 Redémarrage du bot...", ephemeral=EPHEMERAL_GLOBAL
+)
     logger.info("🔄 Redémarrage demandé par %s", interaction.user)
     await bot.close()
     os.execv(sys.executable, [sys.executable] + sys.argv)
@@ -441,9 +487,11 @@ async def reboot_command(interaction: discord.Interaction):
 @bot.tree.command(name="upgrade", description="Met à jour le bot depuis Git")
 async def upgrade_command(interaction: discord.Interaction):
     if not is_admin(interaction):
-        await interaction.response.send_message("❌ Pas la permission", ephemeral=True)
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=EPHEMERAL_GLOBAL
+)
         return
-    await interaction.response.send_message("⬆️ Mise à jour du bot en cours...", ephemeral=True)
+    await interaction.response.send_message("⬆️ Mise à jour du bot en cours...", ephemeral=EPHEMERAL_GLOBAL
+)
     logger.info("⬆️ Mise à jour demandée par %s", interaction.user)
     try:
         result = subprocess.run(["git", "pull"], capture_output=True, text=True)
@@ -453,7 +501,22 @@ async def upgrade_command(interaction: discord.Interaction):
         os.execv(sys.executable, [sys.executable] + sys.argv)
     except Exception as e:
         logger.error(f"Erreur lors de la mise à jour: {e}")
-        await interaction.followup.send(f"❌ Erreur mise à jour: {e}", ephemeral=True)
+        await interaction.followup.send(f"❌ Erreur mise à jour: {e}", ephemeral=EPHEMERAL_GLOBAL
+)
+
+@bot.tree.command(name="ephemeral", description="Active ou désactive les messages éphémères")
+@app_commands.describe(option="true pour activer, false pour désactiver")
+async def ephemeral_command(interaction: discord.Interaction, option: bool):
+    global EPHEMERAL_GLOBAL
+    if not is_admin(interaction):
+        await interaction.response.send_message("❌ Pas la permission", ephemeral=True
+)
+        return
+
+    EPHEMERAL_GLOBAL = option
+    status = "activés" if EPHEMERAL_GLOBAL else "désactivés"
+    await interaction.response.send_message(f"✅ Les messages éphémères sont maintenant {status}.", ephemeral=EPHEMERAL_GLOBAL
+)
 
 # ========================================
 # LANCEMENT DU BOT
