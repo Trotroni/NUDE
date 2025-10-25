@@ -40,7 +40,7 @@ LANG_DIR.mkdir(exist_ok=True)
 COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
-VERSION = "v.5.2.1-beta - 2025-10-25"
+VERSION = "v.5.3.0 - 2025-10-25"
 AUTOR = "Trotroni"
 
 # ========================================
