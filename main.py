@@ -43,6 +43,9 @@ WARN_FILE.touch(exist_ok=True)
 VERSION = "v.5.5.0 - 2025-10-25"
 AUTOR = "Trotroni"
 
+#lancement chrono 
+start = time.perf_counter()
+
 # ========================================
 # LOGGING
 # ========================================
@@ -266,22 +269,43 @@ async def on_ready():
 
     try:
         if GUILD_ID:
-            guild = discord.Object(id=int(GUILD_ID))
-            guild_name = bot.get_guild(int(GUILD_ID))
-            existing = await bot.tree.fetch_commands(guild=guild)
-            for cmd in existing:
-                await bot.tree.remove_command(cmd.name, guild=guild)
+            guild_id = int(GUILD_ID)
 
-            # Sync toutes les commandes pour la guilde
-            await bot.tree.sync(guild=guild)
-            logger.info(f"✅ Commandes synchronisées sur la guild: {guild_name} | ID: {GUILD_ID}")
+            # 🔹 Attendre que le bot soit prêt pour accéder au cache
+            await bot.wait_until_ready()
+
+            # 🔹 Tente de récupérer la guilde depuis le cache
+            guild_obj = bot.get_guild(guild_id)
+
+            # 🔹 Si la guilde n’est pas encore dans le cache, la récupérer depuis l’API
+            if guild_obj is None:
+                try:
+                    guild_obj = await bot.fetch_guild(guild_id)
+                    logger.debug(f"Guilde récupérée depuis l’API : {guild_obj.name}")
+                except Exception as e:
+                    logger.warning(f"Impossible de récupérer la guilde {guild_id} : {e}")
+                    guild_obj = discord.Object(id=guild_id)
+
+            # 🔹 Suppression des anciennes commandes
+            existing = await bot.tree.fetch_commands(guild=guild_obj)
+            for cmd in existing:
+                try:
+                    bot.tree.remove_command(cmd.name, guild=guild_obj)  # ✅ sans await
+                except Exception as e:
+                    logger.warning(f"Impossible de supprimer la commande {cmd.name}: {e}")
+
+            # 🔹 Synchronisation des commandes pour la guilde
+            await bot.tree.sync(guild=guild_obj)
+            guild_name = getattr(guild_obj, "name", "Inconnue")
+            logger.info(f"✅ Commandes synchronisées sur la guilde : {guild_name} | ID: {GUILD_ID}")
+
         else:
-            await bot.tree.sync(guild=guild)  # Sync guild uniquement : supprimer guild=guild pour global
+            # 🔹 Synchronisation globale (aucune guilde définie)
+            await bot.tree.sync()
             logger.info("✅ Commandes globales synchronisées")
+
     except Exception as e:
         logger.error(f"Erreur synchronisation commandes : {e}")
-
-
 
     if CHANNEL_ID_BOT:
         try:
@@ -293,11 +317,11 @@ async def on_ready():
                     color=discord.Color.pink()
                 )
 
-                embed.add_field(name="Heure", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), inline=True)
+                embed.add_field(name="Date", value=datetime.now().strftime("%Y-%m-%d"), inline=True)
+                embed.add_field(name="Heure", value=datetime.now().strftime("%H:%M:%S"), inline=True)
                 embed.add_field(name="Version", value=VERSION, inline=True)
-                embed.add_field(name="Auteur", value=AUTOR, inline=True)
-
-                embed.set_footer(text="Démarrage réussi")
+                
+                embed.set_footer(text=lang_manager.get("bot_online_footer", end = time.perf_counter() - start))
 
                 await channel.send(embed=embed)
                 logger.info(f"✅ Message envoyé dans le salon: {channel} | ID: {CHANNEL_ID_BOT}")
