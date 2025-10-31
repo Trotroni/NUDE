@@ -715,8 +715,8 @@ async def reboot_command(interaction: discord.Interaction):
     user = interaction.user
     name = interaction.command.name
     logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
-    await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
-"""
+#    await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
+
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
     )
@@ -728,14 +728,14 @@ async def reboot_command(interaction: discord.Interaction):
     logger.info("🔄 Redémarrage demandé par %s", interaction.user)
     await bot.close()
     os.execv(sys.executable, [sys.executable] + sys.argv)
-"""
+
 @bot.tree.command(name="upgrade", description="Met à jour le bot depuis Git")
 async def upgrade_command(interaction: discord.Interaction):
     user = interaction.user
     name = interaction.command.name
     logger.info(f"L'utilisateur {user} a exécuté la commande {name}")
-    await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
-"""
+#    await interaction.response.send_message("🚧 Fonctionnalité en construction.", ephemeral=EPHEMERAL_GLOBAL)
+
     if not is_admin(interaction):
         await interaction.response.send_message("permission_denied", ephemeral=EPHEMERAL_GLOBAL
 )
@@ -753,7 +753,7 @@ async def upgrade_command(interaction: discord.Interaction):
         logger.error(f"Erreur lors de la mise à jour: {e}")
         await interaction.followup.send(f"❌ Erreur mise à jour: {e}", ephemeral=EPHEMERAL_GLOBAL
 )
-"""
+
 
 @bot.tree.command(name="ephemeral", description="Active ou désactive les messages éphémères")
 @app_commands.describe(option="true pour activer, false pour désactiver")
