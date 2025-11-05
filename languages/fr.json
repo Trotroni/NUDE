@@ -34,7 +34,7 @@
   "reboot_message": "🔄 Redémarrage du serveur en cours...",
   "reboot_error": "❌ Erreur lors du redémarrage : {error}",
   "bot_update_sent": "✅ Notification envoyée !",
-  "bot_update_not_configured": "⚠️ CHANNEL_ID_BOT n'est pas configuré.",
+  "bot_update_not_configured": "⚠️ CHANNEL_ID_NOTIF n'est pas configuré.",
   "bot_update_channel_not_found": "❌ Salon introuvable.",
   "bot_update_notification": "🔔 Notification de mise à jour du bot !",
   "bot_update_error": "❌ Erreur : {error}",

@@ -40,7 +40,7 @@ LANG_DIR.mkdir(exist_ok=True)
 COMMANDS_CSV.touch(exist_ok=True)
 WARN_FILE.touch(exist_ok=True)
 
-VERSION = "v.5.5.0 - 2025-10-25"
+VERSION = "v.6.0.0 - 2025-10-25"
 AUTOR = "Trotroni"
 
 #lancement chrono 
@@ -69,7 +69,7 @@ load_dotenv(dotenv_path="token.env", override=True)
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
-CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
+CHANNEL_ID_NOTIF = os.getenv("CHANNEL_ID_NOTIF")
 ADMIN_ROLE_ID = os.getenv("ADMIN_ROLE_ID")
 DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "fr")
 ephemeral_env = os.getenv("EPHEMERAL_GLOBAL", "true").lower()
@@ -81,9 +81,9 @@ if not DISCORD_TOKEN:
 elif not GUILD_ID:
     logger.error("❌ GUILD_ID manquant dans les fichiers .env")
     raise ValueError("❌ GUILD_ID manquant dans les fichiers .env")
-elif not CHANNEL_ID_BOT:
-    logger.error("❌ CHANNEL_ID_BOT manquant dans les fichiers .env")
-    raise ValueError("❌ CHANNEL_ID_BOT manquant dans les fichiers .env")
+elif not CHANNEL_ID_NOTIF:
+    logger.error("❌ CHANNEL_ID_NOTIF manquant dans les fichiers .env")
+    raise ValueError("❌ CHANNEL_ID_NOTIF manquant dans les fichiers .env")
 elif not ADMIN_ROLE_ID:
     logger.error("❌ ADMIN_ROLE_ID manquant dans les fichiers .env")
     raise ValueError("❌ ADMIN_ROLE_ID manquant dans les fichiers .env")
@@ -94,7 +94,7 @@ elif ephemeral_env not in ["true", "false"]:
     logger.error("❌ EPHEMERAL_GLOBAL doit être 'true' ou 'false'") 
     raise ValueError("❌ EPHEMERAL_GLOBAL doit être 'true' ou 'false'")
 
-logger.info(f"✅ Configuration chargée: GUILD_ID={GUILD_ID}, CHANNEL_ID_BOT={CHANNEL_ID_BOT}, ADMIN_ROLE_ID={ADMIN_ROLE_ID}, DEFAULT_LANGUAGE={DEFAULT_LANGUAGE}, EPHEMERAL_GLOBAL={EPHEMERAL_GLOBAL}")
+logger.info(f"✅ Configuration chargée: GUILD_ID={GUILD_ID}, CHANNEL_ID_NOTIF={CHANNEL_ID_NOTIF}, ADMIN_ROLE_ID={ADMIN_ROLE_ID}, DEFAULT_LANGUAGE={DEFAULT_LANGUAGE}, EPHEMERAL_GLOBAL={EPHEMERAL_GLOBAL}")
 
 # ========================================
 # GESTION DES LANGUES
@@ -307,9 +307,9 @@ async def on_ready():
     except Exception as e:
         logger.error(f"Erreur synchronisation commandes : {e}")
 
-    if CHANNEL_ID_BOT:
+    if CHANNEL_ID_NOTIF:
         try:
-            channel = bot.get_channel(int(CHANNEL_ID_BOT))
+            channel = bot.get_channel(int(CHANNEL_ID_NOTIF))
             if channel:
                 embed = discord.Embed(
                     title=lang_manager.get("bot_online_title"),
@@ -324,9 +324,9 @@ async def on_ready():
                 embed.set_footer(text=lang_manager.get("bot_online_footer", end = time.perf_counter() - start))
 
                 await channel.send(embed=embed)
-                logger.info(f"✅ Message envoyé dans le salon: {channel} | ID: {CHANNEL_ID_BOT}")
+                logger.info(f"✅ Message envoyé dans le salon: {channel} | ID: {CHANNEL_ID_NOTIF}")
             else:
-                logger.warning("⚠️ CHANNEL_ID_BOT introuvable ou non valide.")
+                logger.warning("⚠️ CHANNEL_ID_NOTIF introuvable ou non valide.")
         except Exception as e:
             logger.error(f"❌ Impossible d'envoyer la notification de démarrage : {e}")
 
