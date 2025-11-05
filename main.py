@@ -154,7 +154,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
 custom_commands = {}
 command_cooldowns = defaultdict(lambda: 0)
 COMMAND_COOLDOWN = 3
@@ -673,7 +673,7 @@ async def unwarn_command(interaction: discord.Interaction, user: discord.Member,
 #a finir
 
 @bot.tree.command(name="report", description="Signale un groupe de message au staff")
-#@app_commands.describe(nombre="Nombre de messages à signaler (10-50)", reason="Raison du signalement", )
+@app_commands.describe(nombre="Nombre de messages à signaler (10-50)", reason="Raison du signalement", )
 async def report_command(interaction: discord.Interaction):
     user = interaction.user
     name = interaction.command.name
